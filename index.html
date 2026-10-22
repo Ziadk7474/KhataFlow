@@ -52,6 +52,7 @@ b.out{color:var(--tx)}b.in,.in{color:var(--ok)}.pend b.out,a.out{color:var(--bad
 .seg{display:flex;gap:3px;padding:3px;background:#E4E3DE;border-radius:99px;margin:8px 0 4px}.seg button{flex:1;min-height:42px;border:0;background:none;box-shadow:none;color:var(--mu)}
 .seg button.on{background:#fff;color:var(--tx);box-shadow:0 2px 8px rgba(14,26,39,.12)}.seg button.on.pay{color:var(--ok)}
 .quick{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 6px}.quick button{min-height:36px;padding:7px 13px;font-size:13px;color:var(--pr);background:var(--s2);box-shadow:none}.quick button.sel{color:#fff;background:var(--pr)}.quick button.add{color:var(--ok);background:#E5F2EC}
+.customer-picker{position:relative}.customer-options{max-height:230px;overflow-y:auto;overscroll-behavior:contain;margin-top:7px;padding:5px;background:#fff;border:1px solid var(--bd);border-radius:16px;box-shadow:var(--sh);-webkit-overflow-scrolling:touch}.customer-options[hidden]{display:none}.customer-option{width:100%;min-height:46px;display:flex;justify-content:space-between;text-align:left;padding:10px 12px;border-radius:11px;background:transparent;box-shadow:none;font-size:14px}.customer-option+.customer-option{border-top:1px solid var(--bd)}.customer-option small{color:var(--mu);font-size:12px}.customer-empty{padding:12px;color:var(--mu);font-size:13px}
 #lc{background:var(--ivory);box-shadow:none;border-radius:22px;padding:6px 18px;margin:16px 0}#lc .row{padding:11px 0;border-bottom:1px dashed rgba(16,44,70,.18)}
 #lc .row:last-child{border:0;border-top:2px solid var(--tx);margin-top:4px;padding-top:14px}#lc .row:last-child b{font-size:25px;font-weight:800;letter-spacing:-.04em}
 .pend{background:#FBF1DC;border-radius:22px;box-shadow:none}
@@ -112,16 +113,16 @@ function localMode(){
  B.child('settings').on('value',s=>{S={...S,...(s.val()||{})};draw()});B.child('customers').on('value',s=>{C=s.val()||{};draw()});B.child('transactions').on('value',s=>{T=s.val()||{};draw()});loadP();}
 // ---- Firebase (Realtime Database + Anonymous Auth) ----
 const firebaseConfig={
- apiKey:"PASTE_FULL_API_KEY_HERE",
- authDomain:"khataflow-d2129.firebaseapp.com",
- databaseURL:"https://khataflow-d2129-default-rtdb.asia-southeast1.firebasedatabase.app",
- projectId:"khataflow-d2129",
- storageBucket:"khataflow-d2129.firebasestorage.app",
- messagingSenderId:"859467556808",
- appId:"1:859467556808:web:c6836df50a9667cd7102fd"
+ apiKey:"AIzaSyBskLp6T4xSYm6NFwsR_Jr868cQeF1rJ0U",
+ authDomain:"khataflow-441c9.firebaseapp.com",
+ databaseURL:"https://khataflow-441c9-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId:"khataflow-441c9",
+ storageBucket:"khataflow-441c9.firebasestorage.app",
+ messagingSenderId:"104768476856",
+ appId:"1:104768476856:web:7f127072532fa4dea7c64d"
 };
 let cloud=false;
-const setNet=()=>{const n=$('#net');n.textContent=cloud?(online?'Cloud se juda hai':'Offline'):'Phone par mehfooz';n.classList.toggle('off',cloud&&!online)};
+const setNet=()=>{const n=$('#net');n.textContent=cloud?(online?'Cloud se juda hai':'Offline'):'Firebase setup baqi';n.classList.toggle('off',!cloud||!online)};
 const saveCache=()=>{try{localStorage.setItem('khataCache',JSON.stringify({c:C,t:T,s:S}))}catch(e){}};
 function firebaseMode(){
  try{const k=JSON.parse(localStorage.getItem('khataCache')||'{}');C=k.c||{};T=k.t||{};S={...S,...(k.s||{})}}catch(e){}
@@ -133,7 +134,7 @@ function firebaseMode(){
   B.child('customers').on('value',s=>{C=s.val()||{};saveCache();draw()},bad);
   B.child('transactions').on('value',s=>{T=s.val()||{};saveCache();draw()},bad);
   loadP();migrate()});
- firebase.auth().signInAnonymously().catch(()=>toast('Login nahi hua. Internet aur Firebase Anonymous Auth check karein.'));
+ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(()=>firebase.auth().signInAnonymously()).catch(e=>{console.error('Firebase anonymous sign-in failed:',e);toast('Anonymous login nahi hua. Firebase Console mein Anonymous Auth enable karein.');setNet()});
 }
 // purana phone wala data ek baar cloud par bhejne ka mauqa
 async function migrate(){try{const L=(JSON.parse(localStorage.getItem('khataLocal')||'{}').businesses||{}).demo;
@@ -183,12 +184,16 @@ const audit=(id,act,old,nw)=>({['auditLogs/'+db.ref().push().key]:{txn:id,act,by
 async function archive(id){try{await B.child('customers/'+id).update({status:C[id].status==='archived'?'active':'archived'});toast('Customer update ho gaya')}catch(e){toast('Masla hua. Dobara koshish karein.')}}
 function delT(id){ask('Yeh hisaab delete karein? Baad mein wapas bahal ho sakta hai.','Delete Karein',async()=>{try{await B.update({['transactions/'+id+'/status']:'deleted',['transactions/'+id+'/updatedAt']:Date.now(),...audit(id,'delete',T[id])});toast('Hisaab delete ho gaya. Baqaya dobara hisaab ho gaya.')}catch(e){toast('Delete nahi hua.')}})}
 async function restoreT(id){try{await B.update({['transactions/'+id+'/status']:'active',['transactions/'+id+'/updatedAt']:Date.now(),...audit(id,'restore')});toast('Hisaab wapas aa gaya')}catch(e){toast('Masla hua.')}}
+// Searchable, touch-scrollable customer picker for the new-entry form.
+function openCustomerList(){const e=$('#fc-options');if(e)e.hidden=false}
+function filterCustomerList(){const e=$('#fc-options');if(!e)return;const q=(FM.cq||'').trim().toLowerCase();let shown=0;e.querySelectorAll('.customer-option').forEach(b=>{const ok=b.dataset.search.includes(q);b.hidden=!ok;if(ok)shown++});let empty=e.querySelector('.customer-empty');if(!empty&&shown===0){empty=document.createElement('div');empty.className='customer-empty';e.append(empty)}if(empty){empty.textContent=shown?'':'Koi customer nahi mila.';empty.hidden=shown!==0}}
+function selectCustomer(id){FM.cid=id;FM.cq='';draw()}
 // ---- Naya Hisaab ----
 function pickShortcut(x){FM.qs=FM.qs||[];if(FM.qs.includes(x))FM.qs=FM.qs.filter(v=>v!==x);else{if(FM.qs.length>=5)return toast('Ek entry mein zyada se zyada 5 shortcuts chun sakte hain');FM.qs.push(x)}FM.desc=[FM.manualDesc||'',...FM.qs].filter(Boolean).join(', ');draw()}
 async function addShortcut(){const x=prompt('Naya maal shortcut likhein');if(!x||!x.trim())return;const v=x.trim(),list=[...(S.shortcuts||[])];if(list.some(a=>a.toLowerCase()===v.toLowerCase()))return toast('Yeh shortcut pehle se mojood hai');list.push(v);S.shortcuts=list;try{await B.child('settings').update({shortcuts:list});toast('Shortcut mehfooz ho gaya')}catch(e){toast('Shortcut mehfooz nahi hua')}}
 function frm(){if(!FM.t||FM.fresh!==arg){const e=arg&&arg.edit?T[arg.edit]:null;FM={t:e?e.type:'udhaar',fresh:arg,id:e?arg.edit:db.ref().push().key,cid:e?e.customerId:(typeof arg==='string'?arg:''),amt:e?e.amountFils/100:'',desc:e?.desc||'',manualDesc:e?.desc||'',qs:[],date:e?.date||today(),notes:e?.notes||'',edit:!!e,q:FM.q,arch:FM.arch,rc:FM.rc}}
  const f=FM,pv=f.cid?bal(f.cid,f.id):0,a=Math.round(parseFloat(f.amt||0)*100)||0,nb=pv+(f.t==='udhaar'?a:-a);
- return `<h2>${f.edit?'Hisaab Tabdeel Karein':'Naya Hisaab'}</h2><div class="card"><label>Customer</label><select id="fc" onchange="FM.cid=this.value;draw()"><option value="">— Chunein —</option>${custs().map(c=>`<option value="${c.id}" ${c.id===f.cid?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+ return `<h2>${f.edit?'Hisaab Tabdeel Karein':'Naya Hisaab'}</h2><div class="card"><label for="fc-search">Customer — Chunein</label><div class="customer-picker"><input id="fc-search" type="search" autocomplete="off" placeholder="Naam ya number se dhoondein" value="${esc(f.cid?(C[f.cid]?.name||''):(f.cq||''))}" onfocus="openCustomerList()" oninput="FM.cq=this.value;FM.cid='';openCustomerList();filterCustomerList()"><div id="fc-options" class="customer-options" role="listbox" aria-label="Customers" hidden>${custs().map(c=>`<button type="button" class="customer-option" role="option" data-search="${esc((c.name+' '+c.phone).toLowerCase())}" onclick="selectCustomer('${c.id}')"><span>${esc(c.name)}</span><small>${esc(c.phone||'')}</small></button>`).join('')||'<div class="customer-empty">Abhi koi customer nahi. Pehle customer banayein.</div>'}</div></div>
  <div class="seg"><button class="${f.t==='udhaar'?'on':''}" onclick="FM.t='udhaar';draw()">Udhaar Diya</button><button class="${f.t==='paisay'?'on pay':''}" onclick="FM.t='paisay';draw()">Paisay Milay</button></div><br>
  <label>Raqam (AED)</label><input id="fa" type="number" inputmode="decimal" step="0.01" value="${f.amt}" oninput="FM.amt=this.value;calc()"><label>Maal ki Tafseel</label><input id="fd" value="${esc(f.desc)}" placeholder="Misal: Coil Nail" oninput="FM.desc=this.value;FM.manualDesc=this.value;FM.qs=[]"><div class="quick">${(S.shortcuts||[]).map(x=>`<button type="button" class="${(f.qs||[]).includes(x)?'sel':''}" onclick='pickShortcut(${JSON.stringify(x)})'>${esc(x)}</button>`).join('')}<button type="button" class="add" onclick="addShortcut()">＋ Naya Shortcut</button></div><div class="mut">Zyada se zyada 5 shortcuts ek entry mein chun sakte hain.</div><label>Tareekh</label><input type="date" value="${f.date}" onchange="FM.date=this.value"><label>Notes (optional)</label><input value="${esc(f.notes)}" oninput="FM.notes=this.value">
  <div id="lc" class="card" style="background:var(--ivory)">${lc(pv,a,nb)}</div><button class="p" style="width:100%" onclick="saveT()">Hisaab Mehfooz Karein</button></div>`}
@@ -262,5 +267,5 @@ const inst=()=>ip?ip.prompt():toast('Browser menu mein "Add to Home screen" chun
 function logo(i){const f=i.files[0];if(!f)return;const im=new Image();im.onload=()=>{const k=Math.min(1,240/im.width),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.logo=c.toDataURL('image/png');toast('Logo chun liya. Mehfooz Karein dabayein.')};im.onerror=()=>toast('Yeh tasveer nahi khuli');im.src=URL.createObjectURL(f)}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 if(typeof firebase!=='undefined'&&firebase.initializeApp&&!firebaseConfig.apiKey.includes('PASTE'))firebaseMode();
-else{localMode();toast('Firebase key abhi nahi lagi. App phone par chal rahi hai.')}
+else{localMode();setNet();toast('Firebase Web API key abhi placeholder hai; data filhaal sirf is phone mein rahega.')}
 </script></body></html>
