@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0B1F3A"><meta name="color-scheme" content="light"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap"><title>KhataFlow</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0B1F3A"><meta name="color-scheme" content="light"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap"><title>KhataFlow</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="KhataFlow"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
 :root{--bg:#EFEEEA;--sf:#fff;--s2:#F2F1ED;--tx:#0E1A27;--mu:#7B8591;--bd:rgba(14,26,39,.08);--pr:#102C46;--pr2:#1B4468;--prt:#fff;--gold:#D6B77A;--ivory:#F5F1E8;--ok:#176B55;--bad:#B33B4B;--gl:rgba(16,44,70,.25);--sh:0 1px 1px rgba(14,26,39,.03),0 14px 36px rgba(14,26,39,.06)}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}html{-webkit-text-size-adjust:100%}[hidden]{display:none!important}
@@ -38,7 +38,7 @@ button.d{color:var(--bad)}button:disabled{opacity:.5;cursor:not-allowed}
 .btns{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.btns>*{flex:1 1 140px}
 label{display:block;font-size:13px;font-weight:600;color:var(--mu);margin:16px 0 7px 4px}
 input,select,textarea{width:100%;min-height:50px;padding:13px 16px;border-radius:15px;border:0;background:var(--s2);color:var(--tx);font:inherit;font-size:16px}
-main>input{background:#fff;box-shadow:var(--sh)}dialog input,dialog select,dialog textarea{background:#fff}
+main>input,.toolbar>input{background:#fff;box-shadow:var(--sh)}dialog input,dialog select,dialog textarea{background:#fff}
 textarea.urdu{font-family:'Noto Naskh Arabic',serif;font-size:18px;line-height:1.8;direction:rtl;text-align:right}
 input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--pr) 35%,transparent)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -79,10 +79,120 @@ dialog h3{font-size:21px}
  nav a{flex:none;flex-direction:row;gap:12px;padding:12px 14px;font-size:14px;border-radius:16px}
  nav a:nth-child(3){width:auto;height:auto;margin:0;padding:12px 14px;border-radius:16px;background:none;color:#8A929C;box-shadow:none}nav a:nth-child(3) span{display:inline}nav a:nth-child(3) svg{width:22px;height:22px}nav a:nth-child(3).on{background:rgba(16,44,70,.08);color:var(--pr)}
  .btns>*{flex:0 1 auto}dialog{margin:auto;border-radius:32px}}
+/* ================= DESKTOP / LARGE SCREENS =================
+   Mobile design is untouched. Everything below only applies on wide screens. */
+@media(min-width:900px){
+ html{scrollbar-width:thin;scrollbar-color:rgba(14,26,39,.25) transparent}
+ body{padding:0 0 48px 280px}
+ /* connection status pill moves to the top-right corner (the mobile header is hidden) */
+ header{display:flex;position:fixed;top:18px;right:30px;left:auto;padding:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;z-index:6}
+ header b{display:none}
+ #net{font-size:12px;padding:8px 15px;background:#fff;box-shadow:var(--sh)}
+ main{max-width:900px;padding:68px 48px 40px}
+ h2{font-size:44px;margin:6px 0 28px}
+ h3{font-size:20px}
+ .card{padding:22px 26px;margin:16px 0}
+ .hero{border-radius:40px;padding:34px 38px 24px}
+ .hero .k{font-size:13px}.hero .big{font-size:64px}.hero svg{height:150px}.dl{font-size:11.5px}.tri b{font-size:16px}.tri span{font-size:12px}
+ .duo{gap:16px;margin:16px 0}.duo .card{padding:22px 26px;border-radius:30px}.duo .v{font-size:28px}.ar{top:20px;right:24px;font-size:22px}
+ .sc{padding:18px 26px 52px;border-radius:30px}.sc+.sc{margin-top:-50px}.sc .t{font-size:18px}.sc .amt{font-size:50px;margin-top:32px}.sc.front{padding-bottom:26px}
+ .row{padding:15px 4px}.row b{font-size:15.5px}.av{width:48px;height:48px;font-size:18px}.ti{width:42px;height:42px}
+ input,select,textarea{min-height:52px}
+ label{font-size:13.5px}
+ /* sidebar */
+ nav a{transition:background .15s,color .15s,transform .15s}
+ nav a:nth-child(3),nav a:nth-child(3).on{margin:10px 0 8px;background:var(--tx);color:#fff;box-shadow:0 12px 24px rgba(14,26,39,.22)}
+ nav a:nth-child(3) svg{color:var(--gold)}
+ nav a.on:not(:nth-child(3)){font-weight:700}
+ /* dialogs become centred modals */
+ dialog{max-width:560px;padding:30px 34px 34px;border-radius:34px;box-shadow:0 40px 90px rgba(10,14,22,.35)}
+ dialog::before{display:none}
+ dialog[open]{animation:pop .2s cubic-bezier(.2,.8,.2,1)}
+ @keyframes pop{from{transform:scale(.96);opacity:0}}
+ #toast{top:22px}
+ /* statement preview looks like an A4 sheet, and exports at the same width as on phones */
+ .stm{max-width:794px;margin-left:auto;margin-right:auto}.stm td:first-child{white-space:nowrap}
+ /* customer tiles */
+ .card.cl{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;background:none;box-shadow:none;padding:0}
+ .cl .row{background:#fff;border:0;border-radius:26px;padding:18px 22px;box-shadow:var(--sh);transition:transform .18s,box-shadow .18s}
+ .cl p.mut{grid-column:1/-1}
+ .cl .row>:first-child{overflow-wrap:normal}.cl .who .mut{white-space:nowrap}.cl .who>div{min-width:0}.cl .who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .toolbar{display:flex;gap:14px;align-items:center}.toolbar>input{flex:1}.toolbar .btns{margin:0;flex:none;flex-wrap:nowrap}.toolbar .btns>*{flex:none;white-space:nowrap}
+ .quick button{min-height:38px}
+}
+@media(min-width:900px) and (hover:hover){
+ button:not(:disabled):hover{filter:brightness(.95)}button.p:not(:disabled):hover,button.g:not(:disabled):hover{filter:brightness(1.18)}
+ .rb:hover{transform:scale(1.07)}
+ nav a:not(.on):hover{background:rgba(16,44,70,.06);color:var(--pr)}nav a:nth-child(3):hover{background:var(--tx);color:#fff;transform:translateY(-1px)}
+ .sc:hover{transform:translateY(-4px)}
+ .row:hover{background:var(--s2);box-shadow:-10px 0 0 var(--s2),10px 0 0 var(--s2);border-radius:6px}
+ .cl .row:hover{background:#fff;border-radius:26px;transform:translateY(-3px);box-shadow:0 20px 44px rgba(14,26,39,.13)}
+ .customer-option:hover{background:var(--s2)}
+}
+/* ---- laptops and up: real multi-column pages ---- */
+@media(min-width:1180px){
+ main{max-width:1200px}
+ /* Home: dashboard on the left, activity feed on the right */
+ main[data-page=home]{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);column-gap:34px;align-items:start}
+ main[data-page=home]>.top,main[data-page=home]>.pend{grid-column:1/-1}
+ main[data-page=home] .hc.b .sh{margin-top:0}
+ main[data-page=home] .hc.b .card{padding:10px 24px}
+ main[data-page=home] .hc.a .sh:first-child{margin-top:34px}
+ /* Customer: summary + actions on the left, full ledger on the right */
+ main[data-page=one]{display:grid;grid-template-columns:minmax(350px,430px) minmax(0,1fr);column-gap:34px;align-items:start}
+ main[data-page=one]>.pend{grid-column:1/-1}
+ main[data-page=one] .oc.a{position:sticky;top:24px}
+ main[data-page=one] .oc.a .top{margin-bottom:4px}
+ main[data-page=one] .oc.a h2{font-size:38px}
+ main[data-page=one] .oc.a .hero .big{font-size:50px}
+ main[data-page=one] .oc.a .btns{flex-direction:column;margin-top:18px}main[data-page=one] .oc.a .btns>*{flex:none;width:100%}
+ main[data-page=one] .oc.b>.card{margin-top:0;padding:22px 28px}
+ main[data-page=one] .oc.a .hero{padding:30px 30px 24px}main[data-page=one] .oc.a .tri{gap:6px}main[data-page=one] .oc.a .tri b{font-size:14.5px;white-space:nowrap}
+ main[data-page=one] .oc.b .row>div:last-child{flex:none;white-space:nowrap}main[data-page=one] .oc.b .row a{margin-left:6px}
+ main[data-page=one] .oc.b .who .mut{overflow-wrap:normal}
+ /* New entry: form on the left, live ledger preview on the right */
+ main[data-page=form]{max-width:1080px}
+ main[data-page=form]>.card:not(.pend){display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);padding:34px 0 34px 38px;border-radius:34px}
+ main[data-page=form] .fc.a{padding-right:38px;border-right:1px solid var(--bd)}
+ main[data-page=form] .fc.a>label:first-child{margin-top:0}
+ main[data-page=form] .fc.b{padding:0 38px;position:sticky;top:24px;align-self:start}
+ main[data-page=form] .fc.b #lc{margin:0 0 18px}
+ main[data-page=form] #lc .row:last-child b{font-size:22px}main[data-page=form] #lc .row span{white-space:nowrap}
+ main[data-page=form] .dn{display:grid;grid-template-columns:1fr 1.4fr;gap:16px}
+ main[data-page=form] #fa{font-size:26px;font-weight:700;min-height:64px;letter-spacing:-.02em}
+ /* Reports: filters beside the statement preview */
+ main[data-page=rep]{max-width:1280px;display:grid;grid-template-columns:minmax(330px,395px) minmax(0,1fr);column-gap:30px;align-items:start}
+ main[data-page=rep]>h2,main[data-page=rep]>.pend{grid-column:1/-1}
+ main[data-page=rep]>.card.noprint:not(.pend){grid-column:1;margin:0;padding:12px 26px 24px}
+ main[data-page=rep]>#out{grid-column:2}main[data-page=rep] .stm{margin-top:0}
+ main[data-page=rep] .grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}main[data-page=rep] input[type=date]{min-width:0}
+ main[data-page=rep] label{margin-top:12px}
+ main[data-page=rep] .btns{gap:10px;margin:20px 0 0}main[data-page=rep] .btns>*{flex:1 1 calc(50% - 5px);padding:12px 6px;font-size:13.5px;white-space:nowrap}main[data-page=rep] .btns>:last-child{flex-basis:100%}
+ /* Settings: form beside the action list */
+ main[data-page=set]{display:grid;grid-template-columns:minmax(0,1fr) 330px;column-gap:30px;align-items:start}
+ main[data-page=set]>h2,main[data-page=set]>.pend{grid-column:1/-1}
+ main[data-page=set]>.card{margin:0}main[data-page=set] p.mut{text-align:left;padding:16px 4px 0}
+ main[data-page=set]>.btns{grid-column:2;flex-direction:column;margin:0;position:sticky;top:24px}main[data-page=set]>.btns>*{flex:none;width:100%;justify-content:flex-start;padding-left:24px}
+}
+/* ---- big monitors ---- */
+@media(min-width:1600px){
+ body{padding-left:300px}nav{width:268px}
+ main{max-width:1300px}
+ main[data-page=rep]{max-width:1500px}
+ main[data-page=form]{max-width:1180px}
+ main[data-page=set]{max-width:1100px}
+ h2{font-size:50px}
+ .hero .big{font-size:74px}.hero svg{height:180px}
+ main[data-page=home]{column-gap:40px}
+ main[data-page=home]>.hc.a{} 
+ .cl .row{padding:20px 24px}
+ .card.cl{grid-template-columns:repeat(auto-fill,minmax(370px,1fr))}
+}
+@media(min-width:2000px){main{max-width:1480px}main[data-page=rep]{max-width:1700px}}
 @media(prefers-reduced-motion:reduce){*,::before,::after{animation:none!important;transition:none!important}}
 @media print{@page{size:A4;margin:14mm 14mm 16mm;@bottom-center{content:"Page " counter(page)}}
- *{-webkit-print-color-adjust:exact;print-color-adjust:exact}header,nav,#toast,.noprint,main>*:not(#out){display:none!important}body{background:#fff;padding:0!important}main{padding:0;max-width:none}
- .stm{border:0!important;padding:0;overflow:visible;margin:0;box-shadow:none}.stm.t1{background:#fff}.stm table{min-width:0}.stm.t3 .tot{margin:18px 0 0}thead{display:table-header-group}tr,.tot{break-inside:avoid}}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}header,nav,#toast,.noprint,main>*:not(#out){display:none!important}body{background:#fff;padding:0!important}main{padding:0;max-width:none;display:block!important}
+ .stm{max-width:none!important;margin:0!important;border:0!important;padding:0;overflow:visible;margin:0;box-shadow:none}.stm.t1{background:#fff}.stm table{min-width:0}.stm.t3 .tot{margin:18px 0 0}thead{display:table-header-group}tr,.tot{break-inside:avoid}}
 </style></head><body>
 <header><b>KhataFlow</b><span id="net">Phone par mehfooz</span></header>
 <main id="app"></main><nav id="nav"></nav><div id="toast"></div><dialog id="dlg"></dialog>
@@ -148,22 +258,22 @@ function phone(raw){let n=String(raw).replace(/\D/g,'');if(n.startsWith('00'))n=
 function go(p,a){page=p;arg=a;draw()}
 function draw(){if(!U||busy)return;const ic=d=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`,IC={home:ic('<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),cust:ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.3c2 .7 3.5 2.5 3.5 5.7"/>'),form:ic('<path d="M12 5v14M5 12h14"/>'),rep:ic('<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>'),set:ic('<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>')};const nv=[['home','Khata'],['cust','Customers'],['form','Naya Hisaab'],['rep','Reports'],['set','Settings']];
  $('#nav').innerHTML=nv.map(([k,l])=>`<a href="#" class="${page===k||(page==='one'&&k==='cust')?'on':''}" onclick="go('${k}',null);return false">${IC[k]}<span>${l}</span></a>`).join('');
- $('#app').innerHTML=pendUI()+({home,cust,one,form:frm,rep,set})[page]();if(page==='rep')runRep()}
+ $('#app').dataset.page=(page==='one'&&!C[arg])?'cust':page;$('#app').innerHTML=pendUI()+({home,cust,one,form:frm,rep,set})[page]();if(page==='rep')runRep()}
 // ---- views ----
 const sp=f=>`<small>AED</small>${fmt(f).slice(4)}`,PL='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',US='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>';
 function spark(){const L=live(),ds=[...Array(7)].map((_,i)=>{const x=new Date(today());x.setUTCDate(x.getUTCDate()-6+i);return x.toISOString().slice(0,10)}),f=t=>ds.map(k=>L.filter(x=>x.date===k&&x.type===t).reduce((s,x)=>s+x.amountFils,0)),a=f('udhaar'),b=f('paisay'),m=Math.max(1,...a,...b),
  P=v=>{const p=v.map((y,i)=>[10+i*50,84-y/m*66]);return p.map(([x,y],i)=>i?`C${p[i-1][0]+25} ${p[i-1][1]} ${x-25} ${y} ${x} ${y}`:`M${x} ${y}`).join('')},ln=(v,c)=>`<path d="${P(v)}" fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
  return `<svg viewBox="0 0 320 96" preserveAspectRatio="none">${ln(a,'#D6B77A')}${ln(b,'#6FD1B0')}</svg><div class="dl">${ds.map(k=>`<span>${new Date(k).toLocaleDateString('en',{weekday:'narrow',timeZone:'UTC'})}</span>`).join('')}</div>`}
 function home(){const t=today(),L=live(),ts=L.filter(x=>x.date===t),sale=ts.filter(x=>x.type==='udhaar').reduce((s,x)=>s+x.amountFils,0),pay=ts.filter(x=>x.type==='paisay').reduce((s,x)=>s+x.amountFils,0),cs=custs().map(c=>({...c,b:bal(c.id)})),tot=cs.reduce((s,c)=>s+c.b,0),top=cs.filter(c=>c.b>0).sort((a,b)=>b.b-a.b).slice(0,3).reverse(),pal=['c0','c1','c2'].slice(3-top.length);
- return `<div class="top"><h2>Khata<br><span>aap ke haath mein.</span></h2><div class="acts"><button class="rb dk" aria-label="Naya Hisaab" onclick="go('form')">${PL}</button><button class="rb" aria-label="Naya Customer" onclick="custForm()">${US}</button></div></div>
+ return `<div class="top"><h2>Khata<br><span>aap ke haath mein.</span></h2><div class="acts"><button class="rb dk" aria-label="Naya Hisaab" title="Naya Hisaab" onclick="go('form')">${PL}</button><button class="rb" aria-label="Naya Customer" title="Naya Customer" onclick="custForm()">${US}</button></div></div><div class="hc a">
 <div class="hero"><div class="k">Kul Baqaya · customers se lena</div><div class="big">${sp(tot)}</div>${spark()}<div class="lg"><i style="background:#D6B77A"></i>Udhaar<i style="background:#6FD1B0"></i>Paisay Milay<em>Pichle 7 din</em></div></div>
 <div class="duo"><div class="card"><div class="k">Aaj ki Sale</div><div class="v">${fmt(sale)}</div><span class="ar">↗</span></div><div class="card"><div class="k">Aaj Paisay Milay</div><div class="v in">${fmt(pay)}</div><span class="ar in">↙</span></div></div>
-${top.length?`<div class="sh"><h3>Sab se zyada baqaya</h3><a href="#" onclick="go('cust');return false">Sab dekhein</a></div><div class="stack">${top.map((c,i)=>{const fr=i===top.length-1;return `<a class="sc ${pal[i]}${fr?' front':''}" href="#" onclick="go('one','${c.id}');return false"><div class="t">${esc(c.name)}<span>Baqaya</span></div>${fr?`<div class="amt">${fmt(c.b)}</div><div class="num">•••• •••• ${esc(String(c.phone).slice(-4))}</div>`:''}</a>`}).join('')}</div>`:''}
-<div class="sh"><h3>Haal ka Hisaab</h3></div><div class="card" style="margin-top:0">${L.sort(sortT).reverse().slice(0,8).map(x=>trow(x,1)).join('')||'<p class="mut">Abhi koi hisaab nahi.</p>'}</div>`}
+${top.length?`<div class="sh"><h3>Sab se zyada baqaya</h3><a href="#" onclick="go('cust');return false">Sab dekhein</a></div><div class="stack">${top.map((c,i)=>{const fr=i===top.length-1;return `<a class="sc ${pal[i]}${fr?' front':''}" href="#" onclick="go('one','${c.id}');return false"><div class="t">${esc(c.name)}<span>Baqaya</span></div>${fr?`<div class="amt">${fmt(c.b)}</div><div class="num">•••• •••• ${esc(String(c.phone).slice(-4))}</div>`:''}</a>`}).join('')}</div>`:''}</div><div class="hc b">
+<div class="sh"><h3>Haal ka Hisaab</h3></div><div class="card" style="margin-top:0">${L.sort(sortT).reverse().slice(0,8).map(x=>trow(x,1)).join('')||'<p class="mut">Abhi koi hisaab nahi.</p>'}</div></div>`}
 function trow(x,nm){const u=x.type==='udhaar';return `<div class="row"><div class="who"><i class="ti ${u?'o':'i'}">${u?'↗':'↙'}</i><div>${nm?`<b>${esc(C[x.customerId]?.name||'?')}</b>`:''}<div class="mut">${esc(x.desc||(u?'Udhaar':'Paisay Milay'))} · ${x.date}</div></div></div><b class="${u?'out':'in'}">${u?'+':'−'}${fmt(x.amountFils)}</b></div>`}
 function cust(){const q=(FM.q||'').toLowerCase();const l=custs(FM.arch).filter(c=>(c.name+c.phone).toLowerCase().includes(q));
- return `<h2>Mere Customers<br><span>${l.length} ${FM.arch?'archive khate':'khate'}</span></h2><input id="qs" placeholder="Naam ya Number Likhein" value="${esc(FM.q||'')}" oninput="FM.q=this.value;draw();const e=$('#qs');e.focus();e.setSelectionRange(e.value.length,e.value.length)"><div class="btns"><button class="p" onclick="custForm()">Naya Customer</button><button onclick="FM.arch=!FM.arch;draw()">${FM.arch?'Active Dekhein':'Archive Dekhein'}</button></div>
- <div class="card">${l.map(c=>`<div class="row" onclick="go('one','${c.id}')" style="cursor:pointer"><div class="who"><i class="av">${esc((c.name||'?')[0]).toUpperCase()}</i><div><b>${esc(c.name)}</b><div class="mut">${esc(c.phone)}</div></div></div><b>${fmt(bal(c.id))}</b></div>`).join('')||'<p class="mut">Koi customer nahi mila.</p>'}</div>`}
+ return `<h2>Mere Customers<br><span>${l.length} ${FM.arch?'archive khate':'khate'}</span></h2><div class="toolbar"><input id="qs" placeholder="Naam ya Number Likhein" value="${esc(FM.q||'')}" oninput="FM.q=this.value;draw();const e=$('#qs');e.focus();e.setSelectionRange(e.value.length,e.value.length)"><div class="btns"><button class="p" onclick="custForm()">Naya Customer</button><button onclick="FM.arch=!FM.arch;draw()">${FM.arch?'Active Dekhein':'Archive Dekhein'}</button></div></div>
+ <div class="card cl">${l.map(c=>`<div class="row" onclick="go('one','${c.id}')" style="cursor:pointer"><div class="who"><i class="av">${esc((c.name||'?')[0]).toUpperCase()}</i><div><b>${esc(c.name)}</b><div class="mut">${esc(c.phone)}</div></div></div><b>${fmt(bal(c.id))}</b></div>`).join('')||'<p class="mut">Koi customer nahi mila.</p>'}</div>`}
 function custForm(id){const c=C[id]||{};$('#dlg').innerHTML=`<h3>${id?'Customer Tabdeel Karein':'Naya Customer'}</h3><label>Naam</label><input id="cn" value="${esc(c.name)}"><label>Phone (country code ke saath)</label><input id="cp" value="${esc(c.phone)}" placeholder="+971501234567"><label>Business ka Naam (optional)</label><input id="cb" value="${esc(c.biz)}"><label>Pata (optional)</label><input id="ca" value="${esc(c.addr)}">
  ${id?'':'<label>Pehle ka Baqaya (AED)</label><input id="co" type="number" step="0.01" value="0">'}<label>Notes</label><input id="cx" value="${esc(c.notes)}"><div class="btns"><button onclick="$('#dlg').close()">Wapas</button><button class="p" onclick="saveCust('${id||''}')">Mehfooz Karein</button></div>`;$('#dlg').showModal()}
 async function saveCust(id){const n=$('#cn').value.trim(),p=phone($('#cp').value);if(!n)return toast('Naam likhein');if(!p)return toast('Customer ka phone number check karein');
@@ -173,10 +283,10 @@ async function saveCust(id){const n=$('#cn').value.trim(),p=phone($('#cp').value
 function one(){const c=C[arg];if(!c)return cust();const all=live().filter(t=>t.customerId===arg).sort(sortT);let r=c.openingFils||0;
  const rows=all.map(t=>{r+=eff(t);return {t,r}}).reverse(),cr=all.filter(t=>t.type==='udhaar').reduce((s,t)=>s+t.amountFils,0),pd=all.filter(t=>t.type==='paisay').reduce((s,t)=>s+t.amountFils,0);
  const del=Object.entries(T).filter(([,t])=>t.customerId===arg&&t.status==='deleted');
- return `<div class="top"><button class="rb" aria-label="Wapas" onclick="go('cust')">‹</button></div><h2>${esc(c.name)}<br><span>${esc(c.phone)}${c.biz?' · '+esc(c.biz):''}</span></h2><div class="hero"><div class="k">Kul Baqaya</div><div class="big">${sp(bal(arg))}</div><div class="tri"><div><span>Pehle ka</span><b>${fmt(c.openingFils||0)}</b></div><div><span>Udhaar</span><b>${fmt(cr)}</b></div><div><span>Paisay Milay</span><b class="g">${fmt(pd)}</b></div></div></div>
- <div class="btns"><button class="p" onclick="go('form','${arg}')">Naya Hisaab</button><button onclick="FM.rc=arg;go('rep')">Statement Dekhein</button><button onclick="custForm('${arg}')">Tabdeel Karein</button><button onclick="archive('${arg}')">${c.status==='archived'?'Wapas Bahal Karein':'Archive Karein'}</button></div>
+ return `<div class="oc a"><div class="top"><button class="rb" aria-label="Wapas" title="Wapas" onclick="go('cust')">‹</button></div><h2>${esc(c.name)}<br><span>${esc(c.phone)}${c.biz?' · '+esc(c.biz):''}</span></h2><div class="hero"><div class="k">Kul Baqaya</div><div class="big">${sp(bal(arg))}</div><div class="tri"><div><span>Pehle ka</span><b>${fmt(c.openingFils||0)}</b></div><div><span>Udhaar</span><b>${fmt(cr)}</b></div><div><span>Paisay Milay</span><b class="g">${fmt(pd)}</b></div></div></div>
+ <div class="btns"><button class="p" onclick="go('form','${arg}')">Naya Hisaab</button><button onclick="FM.rc=arg;go('rep')">Statement Dekhein</button><button onclick="custForm('${arg}')">Tabdeel Karein</button><button onclick="archive('${arg}')">${c.status==='archived'?'Wapas Bahal Karein':'Archive Karein'}</button></div></div><div class="oc b">
  <div class="card"><h3 style="margin-bottom:6px">Hisaab ki Tafseel</h3>${rows.map(({t,r})=>{const u=t.type==='udhaar';return `<div class="row"><div class="who"><i class="ti ${u?'o':'i'}">${u?'↗':'↙'}</i><div>${esc(t.desc||(u?'Udhaar':'Paisay Milay'))}<div class="mut">${t.date} · Baqaya ${fmt(r)}</div></div></div><div style="text-align:right"><b class="${u?'out':'in'}">${u?'+':'−'}${fmt(t.amountFils)}</b><br><a href="#" onclick="share('${t.id}',T['${t.id}']);return false">WhatsApp</a><a href="#" onclick="go('form',{edit:'${t.id}'});return false">Tabdeel</a><a href="#" class="out" onclick="delT('${t.id}');return false">Delete</a></div></div>`}).join('')||'<p class="mut">Abhi koi hisaab nahi.</p>'}
- ${del.length?`<h3 style="margin-top:18px">Delete Shuda</h3>${del.map(([id,t])=>`<div class="row"><span class="mut">${t.date} ${fmt(t.amountFils)} ${esc(t.desc||'')}</span><a href="#" onclick="restoreT('${id}');return false">Wapas Bahal Karein</a></div>`).join('')}`:''}</div>`}
+ ${del.length?`<h3 style="margin-top:18px">Delete Shuda</h3>${del.map(([id,t])=>`<div class="row"><span class="mut">${t.date} ${fmt(t.amountFils)} ${esc(t.desc||'')}</span><a href="#" onclick="restoreT('${id}');return false">Wapas Bahal Karein</a></div>`).join('')}`:''}</div></div>`}
 const audit=(id,act,old,nw)=>({['auditLogs/'+db.ref().push().key]:{txn:id,act,by:U.uid,at:firebase.database.ServerValue.TIMESTAMP,old:old||null,new:nw||null}});
 async function archive(id){try{await B.child('customers/'+id).update({status:C[id].status==='archived'?'active':'archived'});toast('Customer update ho gaya')}catch(e){toast('Masla hua. Dobara koshish karein.')}}
 function delT(id){ask('Yeh hisaab delete karein? Baad mein wapas bahal ho sakta hai.','Delete Karein',async()=>{try{await B.update({['transactions/'+id+'/status']:'deleted',['transactions/'+id+'/updatedAt']:Date.now(),...audit(id,'delete',T[id])});toast('Hisaab delete ho gaya. Baqaya dobara hisaab ho gaya.')}catch(e){toast('Delete nahi hua.')}})}
@@ -190,10 +300,10 @@ function pickShortcut(x){FM.qs=FM.qs||[];if(FM.qs.includes(x))FM.qs=FM.qs.filter
 async function addShortcut(){const x=prompt('Naya maal shortcut likhein');if(!x||!x.trim())return;const v=x.trim(),list=[...(S.shortcuts||[])];if(list.some(a=>a.toLowerCase()===v.toLowerCase()))return toast('Yeh shortcut pehle se mojood hai');list.push(v);S.shortcuts=list;try{await B.child('settings').update({shortcuts:list});toast('Shortcut mehfooz ho gaya')}catch(e){toast('Shortcut mehfooz nahi hua')}}
 function frm(){if(!FM.t||FM.fresh!==arg){const e=arg&&arg.edit?T[arg.edit]:null;FM={t:e?e.type:'udhaar',fresh:arg,id:e?arg.edit:db.ref().push().key,cid:e?e.customerId:(typeof arg==='string'?arg:''),amt:e?e.amountFils/100:'',desc:e?.desc||'',manualDesc:e?.desc||'',qs:[],date:e?.date||today(),notes:e?.notes||'',edit:!!e,q:FM.q,arch:FM.arch,rc:FM.rc}}
  const f=FM,pv=f.cid?bal(f.cid,f.id):0,a=Math.round(parseFloat(f.amt||0)*100)||0,nb=pv+(f.t==='udhaar'?a:-a);
- return `<h2>${f.edit?'Hisaab Tabdeel Karein':'Naya Hisaab'}</h2><div class="card"><label for="fc-search">Customer — Chunein</label><div class="customer-picker"><input id="fc-search" type="search" autocomplete="off" placeholder="Naam ya number se dhoondein" value="${esc(f.cid?(C[f.cid]?.name||''):(f.cq||''))}" onfocus="openCustomerList()" oninput="FM.cq=this.value;FM.cid='';openCustomerList();filterCustomerList()"><div id="fc-options" class="customer-options" role="listbox" aria-label="Customers" hidden>${custs().map(c=>`<button type="button" class="customer-option" role="option" data-search="${esc((c.name+' '+c.phone).toLowerCase())}" onclick="selectCustomer('${c.id}')"><span>${esc(c.name)}</span><small>${esc(c.phone||'')}</small></button>`).join('')||'<div class="customer-empty">Abhi koi customer nahi. Pehle customer banayein.</div>'}</div></div>
+ return `<h2>${f.edit?'Hisaab Tabdeel Karein':'Naya Hisaab'}</h2><div class="card"><div class="fc a"><label for="fc-search">Customer — Chunein</label><div class="customer-picker"><input id="fc-search" type="search" autocomplete="off" placeholder="Naam ya number se dhoondein" value="${esc(f.cid?(C[f.cid]?.name||''):(f.cq||''))}" onfocus="openCustomerList()" oninput="FM.cq=this.value;FM.cid='';openCustomerList();filterCustomerList()"><div id="fc-options" class="customer-options" role="listbox" aria-label="Customers" hidden>${custs().map(c=>`<button type="button" class="customer-option" role="option" data-search="${esc((c.name+' '+c.phone).toLowerCase())}" onclick="selectCustomer('${c.id}')"><span>${esc(c.name)}</span><small>${esc(c.phone||'')}</small></button>`).join('')||'<div class="customer-empty">Abhi koi customer nahi. Pehle customer banayein.</div>'}</div></div>
  <div class="seg"><button class="${f.t==='udhaar'?'on':''}" onclick="FM.t='udhaar';draw()">Udhaar Diya</button><button class="${f.t==='paisay'?'on pay':''}" onclick="FM.t='paisay';draw()">Paisay Milay</button></div><br>
- <label>Raqam (AED)</label><input id="fa" type="number" inputmode="decimal" step="0.01" value="${f.amt}" oninput="FM.amt=this.value;calc()"><label>Maal ki Tafseel</label><input id="fd" value="${esc(f.desc)}" placeholder="Misal: Coil Nail" oninput="FM.desc=this.value;FM.manualDesc=this.value;FM.qs=[]"><div class="quick">${(S.shortcuts||[]).map(x=>`<button type="button" class="${(f.qs||[]).includes(x)?'sel':''}" onclick='pickShortcut(${JSON.stringify(x)})'>${esc(x)}</button>`).join('')}<button type="button" class="add" onclick="addShortcut()">＋ Naya Shortcut</button></div><div class="mut">Zyada se zyada 5 shortcuts ek entry mein chun sakte hain.</div><label>Tareekh</label><input type="date" value="${f.date}" onchange="FM.date=this.value"><label>Notes (optional)</label><input value="${esc(f.notes)}" oninput="FM.notes=this.value">
- <div id="lc" class="card" style="background:var(--ivory)">${lc(pv,a,nb)}</div><button class="p" style="width:100%" onclick="saveT()">Hisaab Mehfooz Karein</button></div>`}
+ <label>Raqam (AED)</label><input id="fa" type="number" inputmode="decimal" step="0.01" value="${f.amt}" oninput="FM.amt=this.value;calc()"><label>Maal ki Tafseel</label><input id="fd" value="${esc(f.desc)}" placeholder="Misal: Coil Nail" oninput="FM.desc=this.value;FM.manualDesc=this.value;FM.qs=[]"><div class="quick">${(S.shortcuts||[]).map(x=>`<button type="button" class="${(f.qs||[]).includes(x)?'sel':''}" onclick='pickShortcut(${JSON.stringify(x)})'>${esc(x)}</button>`).join('')}<button type="button" class="add" onclick="addShortcut()">＋ Naya Shortcut</button></div><div class="mut">Zyada se zyada 5 shortcuts ek entry mein chun sakte hain.</div><div class="dn"><div><label>Tareekh</label><input type="date" value="${f.date}" onchange="FM.date=this.value"></div><div><label>Notes (optional)</label><input value="${esc(f.notes)}" oninput="FM.notes=this.value"></div></div>
+ </div><div class="fc b"><div id="lc" class="card" style="background:var(--ivory)">${lc(pv,a,nb)}</div><button class="p" style="width:100%" onclick="saveT()">Hisaab Mehfooz Karein</button></div></div>`}
 const lc=(pv,a,nb)=>`<div class="row"><span>Pehle ka Baqaya</span><b>${fmt(pv)}</b></div><div class="row"><span>Aaj ka Hisaab</span><b>${fmt(a)}</b></div><div class="row"><span>Naya Kul Baqaya</span><b>${fmt(nb)}</b></div>`;
 function calc(){const pv=FM.cid?bal(FM.cid,FM.id):0,a=Math.round(parseFloat(FM.amt||0)*100)||0;$('#lc').innerHTML=lc(pv,a,pv+(FM.t==='udhaar'?a:-a))}
 async function saveT(){const f=FM;const a=Math.round(parseFloat(f.amt)*100);if(!f.cid)return toast('Customer chunein');if(!(a>0))return toast('Raqam durust tareeqay se likhein');if(!f.date)return toast('Tareekh chunein');
