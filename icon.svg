@@ -1,5 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080"><rect width="1080" height="1080" rx="0" fill="#fff"/><g transform="translate(540 543) scale(1.35) translate(-540 -543)"><g fill="none" stroke="#062C5B" stroke-width="27" stroke-linejoin="round" stroke-linecap="round">
-<g><path d="M357 421 L318 412 L315 645 C420 662 490 700 540 750" />
-    <path d="M372 337 L372 597 C440 618 500 645 540 678 L540 432 C505 395 450 355 372 337 Z" fill="#fff"/></g><g transform="translate(1080 0) scale(-1 1)"><path d="M357 421 L318 412 L315 645 C420 662 490 700 540 750" />
-    <path d="M372 337 L372 597 C440 618 500 645 540 678 L540 432 C505 395 450 355 372 337 Z" fill="#fff"/></g>
-<path d="M540 432 L540 750"/></g></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F3F4FF"/></linearGradient>
+<linearGradient id="pl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6C6FFF"/><stop offset="1" stop-color="#2124D8"/></linearGradient>
+<linearGradient id="pr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B4B9FF"/><stop offset="1" stop-color="#7C86FF"/></linearGradient>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#2124D8" flood-opacity=".28"/></filter>
+</defs>
+<rect width="1024" height="1024" rx="236" fill="url(#bg)"/>
+<rect x="3" y="3" width="1018" height="1018" rx="233" fill="none" stroke="#2124D8" stroke-opacity=".1" stroke-width="6"/>
+<g filter="url(#sh)">
+<path d="M512 790C436 722 336 698 248 708V318C344 308 446 336 512 404Z" fill="url(#pl)"/>
+<path d="M512 790C588 722 688 698 776 708V318C680 308 578 336 512 404Z" fill="url(#pr)"/>
+</g>
+<path d="M300 598C372 500 446 656 512 556S650 440 724 508" fill="none" stroke="#fff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="724" cy="508" r="30" fill="#2124D8" stroke="#fff" stroke-width="22"/>
+</svg>
