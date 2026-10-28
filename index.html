@@ -412,10 +412,10 @@ toggle:async()=>{if(toggleBusy)return;toggleBusy=true;const sw=document.querySel
 change:async()=>{if(await verify('Pehle purana PIN likhein'))await setup();after()},
 fpToggle:async()=>{const c=rd(K);if(!c)return;if(c.f){c.f=null;wr(K,c);tt('Fingerprint band ho gaya')}else tt(await fpOn()?'Fingerprint lag gaya':'Fingerprint nahi lag saka');after()}};
 go.onclick=submit;xb.onclick=cancel;fpBtn.onclick=()=>fp();
-function checkLockOnReturn(){clearTimeout(lockTimer);if(!rd(K)){wr(BG,null);wr(FORCE,null);return}const bg=rd(BG),due=!!rd(FORCE)||(bg!=null&&Date.now()-Number(bg)>=lockDelay()*1000);if(due&&mode!=='unlock')lock(1);else if(mode==='unlock'){if(rd(K)?.f&&!fpAutoAttempted&&!document.hidden){fpAutoAttempted=true;fp()}else focusPin()}else wr(BG,null);away=0}
+function checkLockOnReturn(){clearTimeout(lockTimer);if(window.kfPrinting)return;if(!rd(K)){wr(BG,null);wr(FORCE,null);return}const bg=rd(BG),due=!!rd(FORCE)||(bg!=null&&Date.now()-Number(bg)>=lockDelay()*1000);if(due&&mode!=='unlock')lock(1);else if(mode==='unlock'){if(rd(K)?.f&&!fpAutoAttempted&&!document.hidden){fpAutoAttempted=true;fp()}else focusPin()}else wr(BG,null);away=0}
 addEventListener('focus',()=>{if(!document.hidden)checkLockOnReturn()});addEventListener('pageshow',()=>{if(!document.hidden)checkLockOnReturn()});
 addEventListener('popstate',e=>{if(ign){ign=0;e.stopImmediatePropagation();return}if(mode){e.stopImmediatePropagation();ign=1;setTimeout(()=>ign=0,500);history.go(1);cancel()}},true);
-document.addEventListener('visibilitychange',()=>{if(document.hidden){away=Date.now();if(rd(K)&&!rd(BG))wr(BG,away);clearTimeout(lockTimer);if(rd(K)){const ms=lockDelay()*1000;if(ms===0)lock(0);else lockTimer=setTimeout(()=>{if(document.hidden&&rd(K))lock(0)},ms)}}else checkLockOnReturn()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&window.kfPrinting)return;if(!document.hidden&&window.kfPrinting){window.kfPrinting=0;wr(BG,null);return}if(document.hidden){away=Date.now();if(rd(K)&&!rd(BG))wr(BG,away);clearTimeout(lockTimer);if(rd(K)){const ms=lockDelay()*1000;if(ms===0)lock(0);else lockTimer=setTimeout(()=>{if(document.hidden&&rd(K))lock(0)},ms)}}else checkLockOnReturn()});
 try{PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(v=>{fpA=!!v;after()}).catch(()=>{})}catch(e){}
 if(rd(K)){const bg=rd(BG);if(!rd(FORCE)&&bg!=null&&Date.now()-bg<lockDelay()*1000){wr(BG,null);H.classList.remove('lk')}else lock(1)}else{wr(BG,null);wr(FORCE,null);H.classList.remove('lk')};
 })();
@@ -660,30 +660,19 @@ function rep(){if(FM.rc){R.cid=FM.rc;FM.rc=null;R.shown=1}if(!R.from&&R.p!=='c')
  return `${BK}<h2>Hisaab Reports</h2><div class="card noprint"><label for="rc-search">Customer</label><div class="customer-picker"><input id="rc-search" type="search" autocomplete="off" placeholder="Sab Customers — naam ya number se dhoondein" value="${esc(R.cid&&C[R.cid]?C[R.cid].name:'')}" onfocus="this.select();R.cq='';document.getElementById('rc-options').hidden=false;filterOpts('rc-options','')" oninput="R.cq=this.value;document.getElementById('rc-options').hidden=false;filterOpts('rc-options',R.cq)"><div id="rc-options" class="customer-options" role="listbox" aria-label="Customers" hidden><button type="button" class="customer-option" role="option" data-search="sab all customers" onclick="repPick('')"><span>Sab Customers</span></button>${custs().map(c=>`<button type="button" class="customer-option" role="option" data-search="${esc(((c.name||'')+' '+(c.phone||'')+' '+(c.biz||'')).toLowerCase())}" onclick="repPick('${c.id}')"><span>${esc(c.name)}</span><small>${esc(c.phone||'')}</small></button>`).join('')}</div></div><label>Muddat</label>${sel('p',[['m','Is Mahine'],['t','Aaj'],['w','Is Hafte'],['pm','Pichla Mahina'],['y','Is Saal'],['a','Poori History'],['c','Apni Tareekh Chunein']])}
  <div class="grid report-date-grid"><div><label>Se</label><input type="date" value="${R.from}" onchange="R.shown=0;R.from=this.value;R.p='c';draw()"></div><div><label>Tak</label><input type="date" value="${R.to}" onchange="R.shown=0;R.to=this.value;R.p='c';draw()"></div></div><label>Qisam</label>${sel('ty',[['','Sab'],['udhaar','Udhaar Diya'],['paisay','Paisay Milay']])}
  <div class="btns"><button class="p" onclick="repSearch()">Record Dhoondein</button><button onclick="repPrint()">Print Karein</button><button class="g" onclick="repWa()">WhatsApp Par Bhejein</button></div></div><div id="out"></div>`}
-function runRep(){const{cid,from,to,ty}=R,cs=cid?[cid]:Object.keys(C),c=C[cid],one1=!!c,L=live().filter(t=>cs.includes(t.customerId)&&C[t.customerId]).sort(sortT);
+function runRep(){const{cid,from,to,ty}=R,cs=cid?[cid]:Object.keys(C),c=C[cid],L=live().filter(t=>cs.includes(t.customerId)&&C[t.customerId]).sort(sortT);
  const open=cs.reduce((s,i)=>s+(C[i]?.openingFils||0),0)+L.filter(t=>from&&t.date<from).reduce((s,t)=>s+eff(t),0);
- const inR=L.filter(t=>(!from||t.date>=from)&&(!to||t.date<=to));let r=open,n=0;
- const rows=inR.map(t=>{r+=eff(t);if(ty&&t.type!==ty)return '';n++;const u=t.type==='udhaar',main=u?(t.desc||'Udhaar (maal)'):'Wasooli — '+(t.payMethod||'Cash'),sub=[u?'':(t.payRef?'Ref: '+t.payRef:''),t.notes||''].filter(Boolean).join(' · ');
-  return `<tr class="${u?'u':'p'}"><td class="kst-no">${n}</td><td class="kst-d">${dmy(t.date)}</td><td class="kst-x">${one1?'':`<b class="kst-cn">${esc(C[t.customerId].name)}</b>`}<span>${esc(main)}</span>${sub?`<small>${esc(sub)}</small>`:''}</td><td class="n">${u?fmt(t.amountFils).slice(4):''}</td><td class="n kst-in">${u?'':fmt(t.amountFils).slice(4)}</td><td class="n kst-bal">${fmt(r).slice(4)}</td></tr>`}).join('');
- const X=inR.filter(t=>!ty||t.type===ty),U=X.filter(t=>t.type==='udhaar'),Pd=X.filter(t=>t.type==='paisay'),cr=U.reduce((s,t)=>s+t.amountFils,0),pd=Pd.reduce((s,t)=>s+t.amountFils,0);
- const lastP=L.filter(t=>t.type==='paisay'&&(!to||t.date<=to)).pop(),per=`${from?dmy(from):'Shuru'} – ${to?dmy(to):dmy(today())}`,now=new Date(),gen=dmy(today())+', '+now.toLocaleTimeString('en-GB',{timeZone:'Asia/Dubai',hour:'2-digit',minute:'2-digit'});
- const no='KF-'+today().replace(/-/g,'').slice(2)+'-'+(cid?cid.replace(/[^a-z0-9]/gi,'').slice(-4).toUpperCase():'ALL'),st=r>0?'Customer ne dene hain':r<0?'Advance — hum ne dene hain':'Hisaab barabar hai';
- const cinfo=one1?[c.phone,c.biz,c.addr].filter(Boolean).map(esc).join(' · '):`${cs.filter(i=>C[i]&&C[i].status!=='archived').length} customers`;
+ const inR=L.filter(t=>(!from||t.date>=from)&&(!to||t.date<=to));let r=open;
+ const rows=inR.map(t=>{r+=eff(t);if(ty&&t.type!==ty)return '';const u=t.type==='udhaar';return `<tr><td>${dmy(t.date)}</td><td>${c?'':'<b>'+esc(C[t.customerId].name)+'</b> — '}${esc(txnLabel(t))}</td><td class="n">${u?fmt(t.amountFils):''}</td><td class="n">${u?'':fmt(t.amountFils)}</td><td class="n">${fmt(r)}</td></tr>`}).join('');
+ const X=inR.filter(t=>!ty||t.type===ty),cr=X.filter(t=>t.type==='udhaar').reduce((s,t)=>s+t.amountFils,0),pd=X.filter(t=>t.type==='paisay').reduce((s,t)=>s+t.amountFils,0),per=`${from?dmy(from):'shuru'} se ${to?dmy(to):dmy(today())}`;
  last=`${S.name||'Hisaab'} — Statement${c?' '+c.name:''}\nMuddat: ${per}\nPehle ka Baqaya: ${fmt(open)}\nUdhaar: ${fmt(cr)}\nPaisay Milay: ${fmt(pd)}\nKul Baqaya: ${fmt(r)}`;
  R.title='Statement-'+(c?c.name:'Sab-Customers').replace(/[^\w]+/g,'-')+'-'+today();
- $('#out').innerHTML=`<div class="kst" id="stm">
- <div class="kst-h"><div class="kst-biz">${S.logo?`<img src="${S.logo}" alt="">`:''}<div><h1>${esc(S.name||'KhataFlow')}</h1>${S.phone?`<p>${esc(S.phone)}</p>`:''}</div></div><div class="kst-doc"><span>Account Statement</span><b>${no}</b><small>Banaya: ${gen}</small></div></div>
- <div class="kst-pt"><div><span>${one1?'Customer':'Report'}</span><b>${one1?esc(c.name):'Sab Customers'}</b><p>${cinfo||'&nbsp;'}</p></div><div><span>Muddat</span><b>${per}</b><p>${n} entries${ty?' · sirf '+(ty==='udhaar'?'Udhaar':'Wasooli'):''}</p></div></div>
- <div class="kst-sum"><div><span>Pehle ka Baqaya</span><b>${fmt(open)}</b><small>Opening balance</small></div><div><span>Kul Udhaar</span><b>${fmt(cr)}</b><small>${U.length} entries · Debit</small></div><div><span>Kul Wasooli</span><b class="kst-in">${fmt(pd)}</b><small>${Pd.length} entries · Credit</small></div><div class="kst-cl"><span>Closing Baqaya</span><b>${fmt(Math.abs(r))}</b><small>${st}</small></div></div>
- <div class="kst-tw"><table><thead><tr><th class="kst-no">#</th><th>Tareekh</th><th>Tafseel</th><th class="n">Udhaar<small>Debit</small></th><th class="n">Wasooli<small>Credit</small></th><th class="n">Baqaya<small>Balance</small></th></tr></thead>
- <tbody><tr class="kst-op"><td class="kst-no"></td><td class="kst-d">${from?dmy(from):''}</td><td class="kst-x"><span>Pehle ka Baqaya (Opening)</span></td><td></td><td></td><td class="n kst-bal">${fmt(open).slice(4)}</td></tr>${rows||'<tr><td colspan="6" class="kst-empty">Is muddat mein koi hisaab nahi.</td></tr>'}</tbody>
- <tfoot><tr><td></td><td colspan="2">Kul (${n} entries)</td><td class="n">${fmt(cr).slice(4)}</td><td class="n kst-in">${fmt(pd).slice(4)}</td><td class="n">${fmt(r).slice(4)}</td></tr></tfoot></table></div>
- <div class="kst-f"><div class="kst-nt"><p><b>Note:</b> Udhaar se baqaya barhta hai, Wasooli se kam hota hai. Tamam raqam AED mein hai.${ty?' Qisam filter laga hai; Baqaya column poori history se hai.':''}</p>${lastP?`<p><b>Aakhri wasooli:</b> ${fmt(lastP.amountFils)} · ${dmy(lastP.date)}</p>`:''}<p>Agar is statement mein koi ghalti ho to baraye meherbani foran rabta karein.</p></div>
- <div class="kst-tot"><div><span>Pehle ka Baqaya</span><b>${fmt(open)}</b></div><div><span>+ Kul Udhaar</span><b>${fmt(cr)}</b></div><div><span>− Kul Wasooli</span><b>${fmt(pd)}</b></div><div class="kst-big"><span>Closing Baqaya</span><b>${fmt(r)}</b></div></div></div>
- <div class="kst-sg"><div>Dastakhat · ${esc(S.name||'Business')}</div><div>Dastakhat · ${one1?esc(c.name):'Customer'}</div></div>
- <p class="kst-end">${esc(S.name||'KhataFlow')}${S.phone?' · '+esc(S.phone):''} · Statement ${no} · KhataFlow se banaya gaya</p></div>`}
+ $('#out').innerHTML=`<div class="kst" id="stm">${S.logo?`<img class="kst-logo" src="${S.logo}" alt="">`:''}<h1>${esc(S.name||'KhataFlow')}</h1>${S.phone?`<div class="kst-m">${esc(S.phone)}</div>`:''}
+ <h2>${c?esc(c.name)+(c.phone?' · '+esc(c.phone):''):'Sab Customers'}</h2><div class="kst-m">Muddat: ${per}</div>
+ <div class="kst-tw"><table><thead><tr><th>Tareekh</th><th>Tafseel</th><th class="n">Udhaar</th><th class="n">Paisay</th><th class="n">Baqaya</th></tr></thead><tbody><tr class="kst-op"><td></td><td>Pehle ka Baqaya</td><td></td><td></td><td class="n">${fmt(open)}</td></tr>${rows||'<tr><td colspan="5" class="kst-m" style="text-align:center;padding:18px 0">Is muddat mein koi hisaab nahi.</td></tr>'}</tbody></table></div>
+ <div class="kst-t">Kul Udhaar ${fmt(cr)} · Paisay Milay ${fmt(pd)}</div><div class="kst-c"><span>Closing Baqaya</span><b>${fmt(r)}</b></div><div class="kst-m kst-d">Banaya gaya: ${dmy(today())}</div></div>`}
 function repSearch(){R.shown=1;runRep();$('#out').scrollIntoView({behavior:'smooth',block:'start'})}
-function repPrint(){R.shown=1;runRep();const t0=document.title;document.title=R.title||t0;const back=()=>{document.title=t0;removeEventListener('afterprint',back)};addEventListener('afterprint',back);setTimeout(()=>{window.print();setTimeout(back,1500)},150)}
+function repPrint(){R.shown=1;runRep();const t0=document.title;document.title=R.title||t0;window.kfPrinting=1;const back=()=>{document.title=t0;removeEventListener('afterprint',back);setTimeout(()=>{window.kfPrinting=0},1500)};addEventListener('afterprint',back);requestAnimationFrame(()=>requestAnimationFrame(()=>{try{window.print()}catch(e){toast('Print nahi khula')}setTimeout(()=>{document.title=t0},4000)}))}
 function repWa(){if(!R.cid)return toast('WhatsApp ke liye customer chunein');R.shown=1;runRep();wa(R.cid,last)}
 const lib=u=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=u;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
 async function outf(kind,sh){try{runRep();if(!window.html2canvas)await lib('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
@@ -1104,10 +1093,10 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 /* ===== New Home ===== */
 window.home=function(){const t=today(),L=live(),ts=L.filter(x=>x.date===t),sale=ts.filter(x=>x.type==='udhaar').reduce((s,x)=>s+x.amountFils,0),pay=ts.filter(x=>x.type==='paisay').reduce((s,x)=>s+x.amountFils,0),cs=custs().map(c=>({...c,b:bal(c.id)})),tot=cs.reduce((s,c)=>s+c.b,0),owe=cs.filter(c=>c.b>0),top=owe.slice().sort((a,b)=>b.b-a.b).slice(0,3).reverse(),
 h=+new Date().toLocaleString('en',{timeZone:'Asia/Dubai',hour:'numeric',hour12:false}),gr=h<12?'Subah bakhair':h<18?'Assalam-o-Alaikum':'Shaam bakhair',
-q=(f,i,l,h,k)=>`<button class="qk" onclick="${f}" title="${l} (${k})"><i>${ic(i,24)}</i><span class="qk-t"><b>${l}</b><small>${h}</small></span><kbd>${k}</kbd></button>`,wk=L.filter(x=>Date.parse(x.date)>Date.parse(t)-7*864e5),wu=wk.filter(x=>x.type==='udhaar').reduce((s,x)=>s+x.amountFils,0),wp=wk.filter(x=>x.type==='paisay').reduce((s,x)=>s+x.amountFils,0);
+q=(f,i,l,h,k)=>`<button class="qk" onclick="${f}" title="${l}"><i>${ic(i,24)}</i><span class="qk-t"><b>${l}</b><small>${h}</small></span></button>`,wk=L.filter(x=>Date.parse(x.date)>Date.parse(t)-7*864e5),wu=wk.filter(x=>x.type==='udhaar').reduce((s,x)=>s+x.amountFils,0),wp=wk.filter(x=>x.type==='paisay').reduce((s,x)=>s+x.amountFils,0);
 return `<div class="hh"><div class="g1">${gr}</div><h1>Aaj ka hisaab</h1></div>
 <div class="hero"><div class="k">Kul Baqaya · ${owe.length} customers se lena</div><div class="big">${sp(tot)}</div>${spark()}<div class="lg"><i style="background:#fff"></i>Udhaar<i style="background:#fff"></i>Paisay Milay<em>Pichle 7 din</em></div>
-<div class="tri"><div><span>7 din Udhaar</span><b>${fmt(wu)}</b></div><div><span>7 din Wasooli</span><b class="g">${fmt(wp)}</b></div><div onclick="go('cust')"><span>Khate</span><b>${cs.length}</b></div></div></div>
+<div class="tri"><div><span>7 din Udhaar</span><b>${sp(wu)}</b></div><div><span>7 din Wasooli</span><b class="g">${sp(wp)}</b></div><div onclick="go('cust')"><span>Khate</span><b>${cs.length}</b></div></div></div>
 <div class="qks">${q("ne('udhaar')",'up','Udhaar','Naya udhaar likhein','N')}${q("ne('paisay')",'dn','Wasooli','Paisay milay','P')}${q("go('cust')",'u','Customers','Sab khate dekhein','2')}${q("go('rep')",'r','Reports','Statement banayein','3')}</div>
 ${window.QR?QR():''}
 <div class="duo2"><div class="mc" role="button" onclick="FM.dd='';go('day','udhaar')"><span>Aaj ki Sale</span><b>${fmt(sale)}</b><i>${ic('up',16)}</i></div><div class="mc in" role="button" onclick="FM.dd='';go('day','paisay')"><span>Aaj Wasooli</span><b>${fmt(pay)}</b><i>${ic('dn',16)}</i></div></div>
@@ -1427,7 +1416,7 @@ const _d=window.draw;window.draw=function(){const A=$('#app');let g=null,dir=0;
    window._kfgo=dir||9}}catch(e){}
  const res=_d.apply(this,arguments);
  try{if(window._kfgo){const d=window._kfgo===9?0:window._kfgo;window._kfgo=0;const K=page==='form'?[...A.querySelectorAll(':scope>:not(.fm),.fm>*:not(.sv)')]:[...A.children];
-  K.forEach(k=>k.animate(d?[{transform:`translate3d(${d*(innerWidth>=1024?3:16)}%,0,0)`,opacity:0},{opacity:1,offset:.6},{transform:'none',opacity:1}]:[{opacity:0},{opacity:1}],{duration:d?280:140,easing:'cubic-bezier(.25,.8,.25,1)',fill:'backwards'}));
+  const W=innerWidth>=1024;K.forEach((k,i)=>k.animate(W?[{transform:'translate3d(0,14px,0)',opacity:0},{transform:'none',opacity:1}]:d?[{transform:`translate3d(${d*16}%,0,0)`,opacity:0},{opacity:1,offset:.6},{transform:'none',opacity:1}]:[{opacity:0},{opacity:1}],{duration:W?420:d?280:140,delay:W?Math.min(i,7)*45:0,easing:'cubic-bezier(.22,1,.36,1)',fill:'backwards'}));
   const sv=A.querySelector('.sv');sv&&sv.animate({opacity:[0,1]},{duration:200,fill:'backwards'});
   if(g){g.animate([{transform:'none',opacity:1},{transform:`translate3d(${-d*(innerWidth>=1024?3:20)}%,0,0)`,opacity:0}],{duration:300,easing:'cubic-bezier(.3,0,.2,1)',fill:'forwards'}).onfinish=()=>g.remove();setTimeout(()=>g.remove(),700)}}
   window._kfp=page;if(page==='form')live()}catch(e){if(g)g.remove()}
@@ -1638,71 +1627,87 @@ details.mo textarea{margin-top:8px;min-height:64px;resize:none;line-height:1.45;
  .kfrec>b{flex:none}
  .abs{grid-template-columns:repeat(5,1fr)}
 }
-/* ===== statement (one design, paper look, same on screen and print) ===== */
+/* ===== statement: simple and clean ===== */
 #out:empty{display:none}
-.kst{--k-ink:#101322;--k-mu:#667085;--k-ln:#E4E7EC;--k-soft:#F5F6FA;--k-ac:#2527E8;--k-in:#0E7A53;background:#fff;color:var(--k-ink);border-radius:20px;padding:28px 26px 22px;margin-top:16px;box-shadow:0 1px 2px rgba(16,19,34,.06),0 18px 40px -22px rgba(16,19,34,.35);font-family:"Inter",-apple-system,"SF Pro Text",system-ui,sans-serif;font-size:12.5px;line-height:1.45;letter-spacing:0;font-variant-numeric:tabular-nums;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.kst *{letter-spacing:inherit}
-.kst-h{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding-bottom:16px;border-bottom:2px solid var(--k-ink)}
-.kst-biz{display:flex;gap:12px;align-items:center;min-width:0}.kst-biz img{height:48px;max-width:110px;object-fit:contain}
-.kst-biz h1{margin:0;font-size:17px;line-height:1.2;font-weight:800;letter-spacing:-.01em;color:var(--k-ink);text-transform:uppercase}
-.kst-biz p{margin:3px 0 0;color:var(--k-mu);font-size:12px}
-.kst-doc{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.kst-doc span{display:inline-block;padding:3px 9px;border-radius:99px;background:var(--k-ink);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
-.kst-doc b{font-size:13px;margin-top:4px}.kst-doc small{color:var(--k-mu);font-size:11px}
-.kst-pt{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin:16px 0 14px}
-.kst-pt>div{min-width:0}.kst-pt>div+div{text-align:right}
-.kst-pt span,.kst-sum span,.kst-tot span{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--k-mu)}
-.kst-pt b{display:block;font-size:16px;font-weight:700;margin-top:3px;overflow-wrap:anywhere}.kst-pt p{margin:2px 0 0;color:var(--k-mu);font-size:12px;overflow-wrap:anywhere}
-.kst-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
-.kst-sum>div{min-width:0;padding:11px 12px;border-radius:12px;background:var(--k-soft);border:1px solid var(--k-ln)}
-.kst-sum b{display:block;margin-top:5px;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kst-sum small{display:block;margin-top:2px;font-size:10.5px;color:var(--k-mu)}
-.kst-sum .kst-cl{background:var(--k-ink);border-color:var(--k-ink);color:#fff}.kst-sum .kst-cl span,.kst-sum .kst-cl small{color:rgba(255,255,255,.72)}
-.kst-in{color:var(--k-in)!important}
-.kst-tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
-.kst table{width:100%;min-width:560px;border-collapse:collapse;font-size:12px}
-.kst th{padding:8px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--k-mu);background:var(--k-soft);border-top:1px solid var(--k-ln);border-bottom:1px solid var(--k-ln);white-space:nowrap;vertical-align:bottom}
-.kst th small{display:block;font-size:8.5px;font-weight:600;opacity:.75}
-.kst td{padding:8px 8px;border-bottom:1px solid var(--k-ln);vertical-align:top;color:var(--k-ink)}
-.kst .n{text-align:right!important;white-space:nowrap}
-.kst-no{width:26px;color:var(--k-mu)!important;font-size:10.5px}.kst-d{white-space:nowrap;width:78px}
-.kst-x span{display:block;font-weight:500;overflow-wrap:anywhere}.kst-x small{display:block;color:var(--k-mu);font-size:11px;margin-top:1px;overflow-wrap:anywhere}.kst-cn{display:block;font-size:11.5px}
-.kst-bal{font-weight:700}
-.kst tbody tr:nth-child(even) td{background:#FAFBFC}
-.kst-op td{background:#FAFBFC;font-style:italic;color:var(--k-mu)}.kst-op .kst-bal{font-style:normal;color:var(--k-ink)}
-.kst tfoot td{padding:10px 8px;font-weight:800;border-top:2px solid var(--k-ink);border-bottom:2px solid var(--k-ink);background:#fff}
-.kst-empty{text-align:center;color:var(--k-mu);padding:22px 8px!important}
-.kst-f{display:grid;grid-template-columns:1fr minmax(220px,300px);gap:22px;margin-top:18px;align-items:start}
-.kst-nt p{margin:0 0 5px;color:var(--k-mu);font-size:11.5px}.kst-nt b{color:var(--k-ink)}
-.kst-tot>div{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--k-ln)}.kst-tot>div b{font-weight:600}
-.kst-tot span{font-size:10.5px;letter-spacing:.05em}
-.kst-tot .kst-big{border:0;margin-top:6px;padding:12px 14px;border-radius:12px;background:var(--k-ink);color:#fff;align-items:center}.kst-tot .kst-big span{color:rgba(255,255,255,.75)}.kst-tot .kst-big b{font-size:19px;font-weight:800}
-.kst-sg{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:44px}
-.kst-sg div{padding-top:7px;border-top:1px solid var(--k-ink);font-size:10.5px;color:var(--k-mu);text-align:center}
-.kst-end{margin:18px 0 0;padding-top:10px;border-top:1px solid var(--k-ln);text-align:center;font-size:10.5px;color:var(--k-mu)}
-.kst .dim{opacity:1!important;color:inherit!important}
-.kst-tot .kst-big span{white-space:nowrap;font-size:10px}.kst-tot .kst-big b{white-space:nowrap}.kst-sum b{font-size:clamp(12.5px,1.5vw,15px)}
-@media(max-width:560px){.kst{padding:20px 16px 18px;border-radius:18px}.kst-h{flex-direction:column;gap:10px}.kst-doc{align-items:flex-start;text-align:left}
- .kst-pt{grid-template-columns:1fr}.kst-pt>div+div{text-align:left}.kst-sum{grid-template-columns:1fr 1fr}.kst-f{grid-template-columns:1fr}.kst-sg{gap:18px}}
-.kst-sum{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
-@media(min-width:1024px) and (max-width:1499px){main[data-page=rep]{display:block!important}main[data-page=rep]>.card.noprint:not(.pend){margin:0 0 20px!important;max-width:none}
- main[data-page=rep] .card.noprint .btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}main[data-page=rep] .card.noprint .btns>*{flex-basis:auto!important}}
-@media(min-width:1024px){main[data-page=rep] #out{min-width:0}.kst{padding:36px 38px 28px;margin-top:0}.kst-biz h1{font-size:20px}}
+.kst{--k1:#0F1222;--k2:#6B7280;--k3:#E5E7EB;background:#fff;color:var(--k1);border-radius:22px;padding:30px 28px 24px;margin-top:16px;box-shadow:0 1px 2px rgba(15,18,34,.05),0 20px 44px -26px rgba(15,18,34,.4);font-family:"Inter",-apple-system,system-ui,sans-serif;font-size:13px;line-height:1.45;letter-spacing:0;font-variant-numeric:tabular-nums}
+.kst *{letter-spacing:inherit}.kst .dim{opacity:1!important;color:inherit!important}
+.kst-logo{display:block;height:44px;max-width:140px;object-fit:contain;margin-bottom:10px}
+.kst h1{margin:0;font-size:21px;line-height:1.2;font-weight:800;letter-spacing:-.02em;color:var(--k1)}
+.kst h2{margin:20px 0 2px;font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--k1)}
+.kst-m{color:var(--k2);font-size:12px}
+.kst-tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:18px}
+.kst table{width:100%;min-width:500px;border-collapse:collapse}
+.kst th{padding:9px 8px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--k2);border-bottom:1.5px solid var(--k1);white-space:nowrap}
+.kst td{padding:9px 8px;border-bottom:1px solid var(--k3);vertical-align:top;color:var(--k1)}
+.kst td:first-child{white-space:nowrap;color:var(--k2)}
+.kst td b{font-weight:600}.kst .n{text-align:right!important;white-space:nowrap}
+.kst-op td{font-style:italic;color:var(--k2)}.kst-op td.n{font-style:normal;color:var(--k1);font-weight:600}
+.kst-t{margin-top:14px;text-align:right;color:var(--k2);font-size:12px}
+.kst-c{display:flex;justify-content:flex-end;align-items:baseline;gap:14px;margin-top:4px}.kst-c span{font-size:13px;font-weight:600}.kst-c b{font-size:26px;font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.kst-d{margin-top:22px;padding-top:10px;border-top:1px solid var(--k3);text-align:center;font-size:11px}
+@media(max-width:560px){.kst{padding:22px 16px 18px;border-radius:18px}.kst h1{font-size:18px}.kst-c b{font-size:22px}}
+@media(min-width:1024px){main[data-page=rep] #out{min-width:0}.kst{padding:40px 42px 30px;margin-top:0}}
 /* ===== print: only the statement, plain white paper ===== */
 @media print{
- @page{size:A4;margin:12mm 11mm 14mm;@bottom-right{content:"Page " counter(page) " / " counter(pages);font-size:8pt;color:#667085}@bottom-left{content:"";}@bottom-center{content:none}}
- html,html body{background:#fff!important;background-image:none!important;padding:0!important;margin:0!important;min-height:0!important;overflow:visible!important}
+ @page{size:A4;margin:14mm 13mm 14mm;@bottom-right{content:counter(page) " / " counter(pages);font-size:8pt;color:#9CA3AF}@bottom-center{content:none}@bottom-left{content:none}}
+ html,html body{background:#fff!important;background-image:none!important;padding:0!important;margin:0!important;min-height:0!important;height:auto!important;overflow:visible!important}
  html body::before,html body::after{display:none!important;content:none!important}
  #nav#nav,html body header,#toast#toast,#dupwarn,#gsx#gsx,.kfa,#dlg,#lock#lock,.noprint,#pend,.kf-gh{display:none!important}
+ html.lk main,html.lk #app,html main#app,#out,#out *{visibility:visible!important;opacity:1!important}
  html body main#app{display:block!important;max-width:none!important;width:auto!important;margin:0!important;padding:0!important;animation:none!important;transform:none!important}
  html body main#app>*:not(#out){display:none!important}
- #out{display:block!important;animation:none!important;transform:none!important}
- .kst{box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0!important;max-width:none!important;font-size:10.5pt}
- .kst-tw{overflow:visible!important;margin:0;padding:0}.kst table{min-width:0!important;font-size:9.5pt}
- .kst thead{display:table-header-group}.kst tfoot{display:table-row-group}
- .kst tr,.kst-sum,.kst-f,.kst-sg,.kst-h,.kst-pt{break-inside:avoid;page-break-inside:avoid}
- .kst-pt{grid-template-columns:1.4fr 1fr}.kst-pt>div+div{text-align:right}.kst-sum{grid-template-columns:repeat(4,1fr)}.kst-f{grid-template-columns:1fr 260px}.kst-h{flex-direction:row}.kst-doc{align-items:flex-end;text-align:right}
+ #out,#out *{animation:none!important;transition:none!important}
+ #out{display:block!important;transform:none!important}
+ .kst{box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0!important;font-size:10pt}
+ .kst-tw{overflow:visible!important}.kst table{min-width:0!important}
+ .kst thead{display:table-header-group}.kst tr,.kst-c{break-inside:avoid;page-break-inside:avoid}
 }
 </style>
+<style id="kf11">
+/* ===== v11: hero numbers always fully visible ===== */
+.hero .tri{container-type:inline-size;gap:10px}
+.hero .tri b{white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;font-size:clamp(11px,4.1cqi,21px)!important;letter-spacing:-.02em}
+.hero .tri b small{font-size:.62em;font-weight:700;opacity:.75;margin-right:3px;letter-spacing:0}
+.qk kbd{display:none!important}
+/* ===== v11: PC layout that follows the phone design ===== */
+@media(min-width:1024px){
+ :root{--sbw:290px}
+ body{padding:0 0 48px var(--sbw)!important}
+ /* sidebar = the phone's dark dock, standing up */
+ #nav{left:18px!important;top:18px!important;bottom:18px!important;width:254px!important;padding:96px 14px 16px!important;border-radius:30px!important;border:0!important;background:linear-gradient(165deg,#1C1E36 0%,#0B0C17 100%)!important;box-shadow:0 30px 60px -30px rgba(10,11,40,.6),inset 0 1px 0 rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.04)!important}
+ #nav::before{top:26px!important;left:24px!important;box-shadow:0 0 0 1px rgba(255,255,255,.15),0 8px 18px -8px rgba(0,0,0,.6)!important}
+ #nav::after{color:#fff!important;top:34px!important;left:76px!important}
+ #nav .dk{position:relative}
+ #nav .dk a{position:relative;z-index:1;height:48px!important;border-radius:16px!important;color:rgba(255,255,255,.6)!important;background:none!important;transition:color .25s,background .2s!important}
+ #nav .dk a:hover{background:rgba(255,255,255,.07)!important;color:#fff!important}
+ #nav .dk a.on,#nav .dk a.on:hover{background:transparent!important;color:#0A0B14!important}
+ #nav .dk:not(.ready) a.on{background:#fff!important}
+ .kf-sind{position:absolute;left:0;right:0;top:0;height:48px;border-radius:16px;background:#fff;box-shadow:0 12px 26px -14px rgba(0,0,0,.7);transform:translate3d(0,var(--sy,0px),0);transition:transform .5s cubic-bezier(.22,1,.36,1);pointer-events:none;z-index:0}
+ #nav .dk::after{color:rgba(255,255,255,.36)!important}
+ #nav .fab{height:52px!important;border-radius:18px!important;box-shadow:0 14px 28px -14px rgba(68,70,255,.9)!important;transition:transform .2s,filter .2s!important}
+ #nav .fab:hover{transform:translateY(-1px)!important}
+ /* top bar: part of the page, never covers the content */
+ header{position:sticky!important;top:0!important;left:auto!important;right:auto!important;display:flex!important;justify-content:flex-end!important;padding:16px 48px 14px!important;z-index:6;background:linear-gradient(var(--bg) 70%,transparent)!important}
+ header #gsb{width:min(420px,40vw)!important;background:var(--sf)!important;box-shadow:var(--ring),0 10px 24px -18px rgba(20,22,60,.35)!important;transition:box-shadow .25s,transform .25s!important}
+ header #gsb:hover{box-shadow:0 0 0 2px color-mix(in srgb,var(--pr) 40%,transparent)!important}
+ main,main[data-page],main[data-page=rep],main[data-page=home],main[data-page=one],main[data-page=set],main[data-page=form]{padding:4px 48px 56px!important;max-width:1500px!important;margin:0 auto!important}
+ /* cards: same glass as phone, gentle lift on hover */
+ .mc,.qk,.sk,.hero{transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s,background-color .2s!important}
+ .mc:hover,.sk:hover{transform:translateY(-3px)!important}
+ .qk:hover{transform:translateY(-2px)!important}
+ .kfrec,#customer-results .row,.tx{transition:background-color .18s!important}
+ .hh{margin-top:0}
+ /* home: right column list stays in view */
+ main[data-page=home]>.card:last-child{position:sticky;top:84px}
+ /* customer page summary stays in view */
+ main[data-page=one] .oc.a{top:84px!important}
+}
+@media(min-width:1024px) and (prefers-reduced-motion:reduce){.kf-sind{transition:none}}
+</style>
+<script>
+/* PC sidebar: sliding white pill, like the phone dock */
+(()=>{const wide=()=>innerWidth>=1024;const place=()=>{const d=document.querySelector('#nav .dk');if(!d)return;let i=d.querySelector('.kf-sind');if(!wide()){if(i)i.style.display='none';return}if(!i){i=document.createElement('i');i.className='kf-sind';d.prepend(i)}i.style.display='';const a=d.querySelector('a.on');if(!a){i.style.opacity=0;return}i.style.opacity=1;i.style.setProperty('--sy',a.offsetTop+'px');i.style.height=a.offsetHeight+'px';d.classList.add('ready')};
+const _u=window.updateNav;window.updateNav=function(){const r=_u.apply(this,arguments);try{place()}catch(e){}return r};addEventListener('resize',()=>requestAnimationFrame(place));requestAnimationFrame(place)})();
+</script>
 <script>KF_BOOT=true;draw();</script>
 </body></html>
