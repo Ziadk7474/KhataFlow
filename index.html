@@ -454,7 +454,7 @@ function localMode(){
  db={ref};window.firebase={database:{ServerValue:{TIMESTAMP:{'.sv':'timestamp'}}}};
  U={uid:'demo'};B=db.ref('businesses/demo');KF_READY=true;
  online=true;
- B.child('settings').on('value',s=>{S={...S,...(s.val()||{})};refreshDataView()});B.child('customers').on('value',s=>{C=s.val()||{};refreshDataView()});B.child('transactions').on('value',s=>{T=s.val()||{};refreshDataView()});loadP();}
+ B.child('settings').on('value',s=>{RS=s.val()||{};overlay();refreshDataView()});B.child('customers').on('value',s=>{RC=s.val()||{};overlay();refreshDataView()});B.child('transactions').on('value',s=>{RT=s.val()||{};overlay();refreshDataView()});loadP();}
 // ---- Firebase (Realtime Database + Anonymous Auth) ----
 const firebaseConfig={
  apiKey:"AIzaSyBskLp6T4xSYm6NFwsR_Jr868cQeF1rJ0U",
@@ -465,24 +465,36 @@ const firebaseConfig={
  messagingSenderId:"104768476856",
  appId:"1:104768476856:web:7f127072532fa4dea7c64d"
 };
-let cloud=false;
-const setNet=()=>{const n=$('#net');if(!n)return;n.textContent=cloud&&online?'Online':'Offline';n.classList.toggle('off',!(cloud&&online))};
-let _sc=0;const _scn=()=>{clearTimeout(_sc);try{localStorage.setItem('khataCache',JSON.stringify({c:C,t:T,s:S}))}catch(e){}},saveCache=()=>{clearTimeout(_sc);_sc=setTimeout(_scn,300)};addEventListener('pagehide',_scn);document.addEventListener('visibilitychange',()=>{if(document.hidden)_scn()});
+let cloud=false,RC={},RT={},RS={},_conn=false;
+/* online = Firebase socket connected AND the phone has network */
+const setNet=()=>{const n=$('#net');if(!n)return;const k=(typeof P!=='undefined'&&P.length)||0,on=cloud&&online;n.textContent=on?(k?'Sync ho raha hai ('+k+')':'Online'):(k?'Offline · '+k+' sync baqi':'Offline');n.classList.toggle('off',!on)};
+const netState=()=>{const was=online;online=!!(cloud&&_conn&&navigator.onLine!==false);setNet();if(online&&!was)flush();if(was!==online)refreshPendingUI()};
+addEventListener('offline',()=>{netState()});
+addEventListener('online',()=>{try{db&&db.goOnline&&db.goOnline()}catch(e){}netState();setTimeout(flush,800)});
+let _sc=0;const _scn=()=>{clearTimeout(_sc);try{localStorage.setItem('khataCache',JSON.stringify({c:RC,t:RT,s:RS}))}catch(e){}},saveCache=()=>{clearTimeout(_sc);_sc=setTimeout(_scn,300)};addEventListener('pagehide',_scn);document.addEventListener('visibilitychange',()=>{if(document.hidden)_scn();else flush()});
+function readCache(){try{const k=JSON.parse(localStorage.getItem('khataCache')||'null');if(k){RC=k.c||{};RT=k.t||{};RS=k.s||{};overlay();KF_READY=true}}catch(e){}}
+/* Firebase-style push id, so keys made offline sort the same way as cloud keys */
+const pushId=(()=>{const A='-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';let last=0,r=[];return()=>{let t=Date.now();const same=t===last;last=t;let ts='';for(let i=0;i<8;i++){ts=A.charAt(t%64)+ts;t=Math.floor(t/64)}if(!same)for(let i=0;i<12;i++)r[i]=Math.floor(Math.random()*64);else{let i=11;for(;i>=0&&r[i]===63;i--)r[i]=0;if(i>=0)r[i]++}return ts+r.map(x=>A.charAt(x)).join('')}})();
+const SDK=['https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js','https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js'];
+function loadSDK(){if(loadSDK.p)return loadSDK.p;const add=src=>new Promise((ok,no)=>{const e=document.createElement('script');e.src=src;e.onload=ok;e.onerror=()=>{e.remove();no(new Error('sdk'))};document.head.append(e)});return loadSDK.p=add(SDK[0]).then(()=>add(SDK[1])).catch(e=>{loadSDK.p=null;throw e})}
+/* App opened with no internet and the Firebase files could not load: run from the phone copy, keep every save in the outbox, connect later */
+function offlineBoot(){window.firebase={database:{ServerValue:{TIMESTAMP:{'.sv':'timestamp'}}}};db={ref:()=>({push:()=>({key:pushId()})})};cloud=true;U={uid:'public'};B=null;readCache();setTimeout(()=>{if(!KF_READY){KF_READY=true;refreshDataView()}},300);online=false;setNet();loadP();
+ const up=()=>{if(navigator.onLine===false)return;loadSDK().then(()=>{removeEventListener('online',up);clearInterval(t);if(firebase.initializeApp)firebaseMode()}).catch(()=>{})},t=setInterval(up,15000);addEventListener('online',up);up()}
 function firebaseMode(){
- try{const k=JSON.parse(localStorage.getItem('khataCache')||'null');if(k){C=k.c||{};T=k.t||{};S={...S,...(k.s||{})};KF_READY=true}}catch(e){}setTimeout(()=>{if(!KF_READY){KF_READY=true;refreshDataView()}},3500);
+ readCache();setTimeout(()=>{if(!KF_READY){KF_READY=true;refreshDataView()}},3500);
  firebase.initializeApp(firebaseConfig);cloud=true;db=firebase.database();U={uid:'public'};B=db.ref('businesses/main');setNet();
- db.ref('.info/connected').on('value',s=>{online=!!s.val();setNet();if(online)flush()});
+ db.ref('.info/connected').on('value',s=>{_conn=!!s.val();netState()});
  const bad=e=>{console.error('Realtime Database error:',e);toast('Cloud ne data nahi diya. Firebase rules ya database URL check karein.')};
- B.child('settings').on('value',s=>{S={...S,...(s.val()||{})};saveCache();refreshDataView()},bad);
- B.child('customers').on('value',s=>{C=s.val()||{};gotData('c');saveCache();refreshDataView()},bad);
- B.child('transactions').on('value',s=>{T=s.val()||{};gotData('t');saveCache();refreshDataView()},bad);
- loadP();migrate()
+ B.child('settings').on('value',s=>{RS=s.val()||{};saveCache();overlay();refreshDataView()},bad);
+ B.child('customers').on('value',s=>{RC=s.val()||{};gotData('c');saveCache();overlay();refreshDataView()},bad);
+ B.child('transactions').on('value',s=>{RT=s.val()||{};gotData('t');saveCache();overlay();refreshDataView()},bad);
+ loadP();migrate();setInterval(()=>{if(P.length&&online)flush()},30000)
 }
 // purana phone wala data ek baar cloud par bhejne ka mauqa
 async function migrate(){try{const L=(JSON.parse(localStorage.getItem('khataLocal')||'{}').businesses||{}).demo;
  if(!L||!Object.keys(L.customers||{}).length||localStorage.getItem('khataMoved'))return;
  const s=await B.child('customers').limitToFirst(1).once('value');if(s.val())return;
- ask('Is phone par purana khata data mojood hai. Cloud par upload kar dein?','Haan, Upload Karein',async()=>{try{await B.update({customers:L.customers||{},transactions:L.transactions||{},settings:L.settings||{}});localStorage.setItem('khataMoved','1');toast('Purana data cloud par chala gaya')}catch(e){toast('Upload nahi hua. Dobara koshish karein.')}})}catch(e){}}
+ ask('Is phone par purana khata data mojood hai. Cloud par upload kar dein?','Haan, Upload Karein',async()=>{try{await W({customers:L.customers||{},transactions:L.transactions||{},settings:L.settings||{}},'Purana data');localStorage.setItem('khataMoved','1');toast('Purana data mehfooz ho gaya — cloud par ja raha hai')}catch(e){toast('Upload nahi hua. Dobara koshish karein.')}})}catch(e){}}
 // ---- ledger maths (fils, integer) ----
 let _pT,_pC,_pL=[],_pB={};const eff=t=>t.type==='udhaar'?t.amountFils:-t.amountFils;
 function _prep(){if(_pT!==T||_pC!==C){_pT=T;_pC=C;_pL=Object.entries(T).map(([id,t])=>({...t,id})).filter(t=>t.status!=='deleted');_pB={};for(const t of _pL)_pB[t.customerId]=(_pB[t.customerId]||0)+eff(t)}}
@@ -548,7 +560,7 @@ function custForm(id){closeCustomerLists();const c=C[id]||{},nx=Date.now().toStr
 async function _saveCust(id){const n=$('#cn').value.trim(),raw0=$('#cp').value.trim(),raw=raw0.replace(/\D/g,'')===String(S.cc||'971')?'':raw0,p=raw?phone(raw):'';if(!n)return toast('Naam likhein');{const nn=n.toLowerCase().replace(/\s+/g,' ');if(!id&&window.dupN!==nn&&Object.values(C).some(c=>(c.name||'').trim().toLowerCase().replace(/\s+/g,' ')===nn)){window.dupN=nn;nameWarn();return toast('Is naam ka customer pehle se hai. Naya banana hai to dobara dabayein.')}}if(raw&&!p)return toast('Phone number check karein, ya khali chhor dein');
  if(p&&!id&&window.dupP!==p&&Object.values(C).some(c=>c.phone===p)){window.dupP=p;return toast('Is number ka customer pehle se hai. Naya banana hai to dobara dabayein.')}
  const ob=Math.round(Math.abs(parseFloat($('#co').value)||0)*100)*parseInt($('#cd').value||1),d={openingFils:ob,name:n,phone:p,biz:$('#cb').value,addr:$('#ca').value,notes:$('#cx').value,status:C[id]?.status||'active'};
- try{let nk='';if(id)await B.child('customers/'+id).update(d);else{d.createdAt=Date.now();const nr=B.child('customers').push();nk=nr.key;await nr.set(d)}$('#dlg').close();if(nk&&page==='form'){FM.cid=nk;FM.cq='';draw();requestAnimationFrame(()=>$('#fa')?.focus({preventScroll:true}))}toast('Customer mehfooz ho gaya')}catch(e){toast('Mehfooz nahi hua. Dobara koshish karein.')}}
+ try{let nk='';if(id){const o={};for(const k in d)o['customers/'+id+'/'+k]=d[k];await W(o,'Customer: '+n)}else{d.createdAt=Date.now();nk=db.ref().push().key;await W({['customers/'+nk]:d},'Naya customer: '+n)}$('#dlg').close();if(nk&&page==='form'){FM.cid=nk;FM.cq='';draw();requestAnimationFrame(()=>$('#fa')?.focus({preventScroll:true}))}toast(online?'Customer mehfooz ho gaya':'Customer phone mein mehfooz ho gaya. Internet aate hi cloud par chala jaye ga.')}catch(e){toast('Mehfooz nahi hua. Dobara koshish karein.')}}
 function one(){const c=C[arg];if(!c)return cust();const all=live().filter(t=>t.customerId===arg).sort(sortT);let r=c.openingFils||0;
  const rows=all.map(t=>{r+=eff(t);return {t,r}}).reverse(),cr=all.filter(t=>t.type==='udhaar').reduce((s,t)=>s+t.amountFils,0),pd=all.filter(t=>t.type==='paisay').reduce((s,t)=>s+t.amountFils,0);
  return `<div class="oc a"><div class="top"><button class="rb" aria-label="Wapas" title="Wapas" onclick="back()">‹</button></div><h2>${esc(c.name)}<br><span>${[c.phone,c.biz].filter(Boolean).map(esc).join(' · ')||'Number nahi'}</span></h2><div class="hero"><div class="k">Kul Baqaya</div><div class="big">${sp(bal(arg))}</div><div class="tri"><div><span>Pehle ka</span><b>${fmt(c.openingFils||0)}</b></div><div><span>Udhaar</span><b>${fmt(cr)}</b></div><div><span>Paisay Milay</span><b class="g">${fmt(pd)}</b></div></div></div>
@@ -558,15 +570,15 @@ function one(){const c=C[arg];if(!c)return cust();const all=live().filter(t=>t.c
 const audit=(id,act,old,nw)=>({['auditLogs/'+db.ref().push().key]:{txn:id,act,by:U.uid,at:firebase.database.ServerValue.TIMESTAMP,old:old||null,new:nw||null}});
 function remind(id){const c=C[id],b=bal(id),p=live().filter(t=>t.customerId===id&&t.type==='paisay').sort(sortT).pop();
  wa(id,dmy(today())+'\nAssalam-o-Alaikum '+c.name+' Sahib,\n\nAap ka kul baqaya: '+fmt(b)+'\n'+(p?'Aakhri adaigi: '+fmt(p.amountFils)+' ('+dmy(p.date)+')\n':'')+'\nMeherbani, jaldi adaigi kar dein.\nShukriya!')}
-async function archive(id){try{await B.child('customers/'+id).update({status:C[id].status==='archived'?'active':'archived'});toast('Customer update ho gaya')}catch(e){toast('Masla hua. Dobara koshish karein.')}}
+async function archive(id){try{await W({['customers/'+id+'/status']:C[id].status==='archived'?'active':'archived'},'Archive: '+(C[id].name||''));toast('Customer update ho gaya')}catch(e){toast('Masla hua. Dobara koshish karein.')}}
 function armDel(btn,fn,label){if(!btn)return fn();const now=Date.now();if(btn.dataset.arm&&now-(+btn.dataset.arm)>350){clearTimeout(btn._at);delete btn.dataset.arm;btn.classList.remove('arm');fn();return}
  if(btn.dataset.arm)return;btn.dataset.arm=now;btn._txt=btn.innerHTML;btn.classList.add('arm');btn.textContent=label||'Pakka delete? Dobara dabayein';try{hap('err')}catch(e){}
  btn._at=setTimeout(()=>{if(!btn.isConnected)return;delete btn.dataset.arm;btn.classList.remove('arm');btn.innerHTML=btn._txt},3200)}
 function delT(id,btn){if(btn)return armDel(btn,()=>delNow(id));ask('Yeh hisaab delete karein?','Delete Karein',()=>delNow(id))}
 function delNow(id){const y=window.scrollY,cid=arg,t=T[id];if(!t)return;
- B.update({['transactions/'+id+'/status']:'deleted',['transactions/'+id+'/updatedAt']:Date.now(),...audit(id,'delete',t)}).catch(()=>toast('Delete nahi hua. Dobara koshish karein.'));
+ W({['transactions/'+id+'/status']:'deleted',['transactions/'+id+'/updatedAt']:Date.now(),...audit(id,'delete',t)},'Delete: '+(C[t.customerId]?.name||'')+' · '+fmt(t.amountFils)).catch(()=>toast('Delete nahi hua. Dobara koshish karein.'));
  toast('Hisaab delete ho gaya',{label:'Undo',run:()=>restoreT(id)},5000);requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'auto'}));if(page==='one'&&arg!==cid)go('one',cid,true)}
-function restoreT(id){const y=window.scrollY;B.update({['transactions/'+id+'/status']:'active',['transactions/'+id+'/updatedAt']:Date.now(),...audit(id,'restore')}).catch(()=>toast('Wapas nahi aaya. Dobara koshish karein.'));toast('Hisaab wapas aa gaya');if(page==='one')requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'auto'}))}
+function restoreT(id){const y=window.scrollY;W({['transactions/'+id+'/status']:'active',['transactions/'+id+'/updatedAt']:Date.now(),...audit(id,'restore')},'Wapas: hisaab').catch(()=>toast('Wapas nahi aaya. Dobara koshish karein.'));toast('Hisaab wapas aa gaya');if(page==='one')requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'auto'}))}
 // Searchable, touch-scrollable customer picker for the new-entry form.
 function openCustomerList(){const e=$('#fc-options');if(e)e.hidden=false}
 function filterCustomerList(){filterOpts('fc-options',FM.cq)}
@@ -578,7 +590,7 @@ function repPick(id){R.cid=id;R.cq='';R.shown=0;draw()}
 addEventListener('click',e=>{if(!e.target.closest('.customer-picker'))document.querySelectorAll('.customer-options').forEach(o=>o.hidden=true)});
 // ---- Naya Hisaab ----
 function pickShortcut(x){FM.qs=FM.qs||[];if(FM.qs.includes(x))FM.qs=FM.qs.filter(v=>v!==x);else{if(FM.qs.length>=5)return toast('Ek entry mein zyada se zyada 5 shortcuts chun sakte hain');FM.qs.push(x)}FM.desc=[FM.manualDesc||'',...FM.qs].filter(Boolean).join(', ');const i=$('#fd');if(i)i.value=FM.desc;document.querySelectorAll('.quick button[data-shortcut]').forEach(b=>{const on=FM.qs.includes(b.dataset.shortcut);b.classList.toggle('sel',on);b.setAttribute('aria-pressed',on)})}
-async function addShortcut(){const x=prompt('Naya maal shortcut likhein');if(!x||!x.trim())return;const v=x.trim(),list=[...(S.shortcuts||[])];if(list.some(a=>a.toLowerCase()===v.toLowerCase()))return toast('Yeh shortcut pehle se mojood hai');list.push(v);S.shortcuts=list;try{await B.child('settings').update({shortcuts:list});toast('Shortcut mehfooz ho gaya')}catch(e){toast('Shortcut mehfooz nahi hua')}}
+async function addShortcut(){const x=prompt('Naya maal shortcut likhein');if(!x||!x.trim())return;const v=x.trim(),list=[...(S.shortcuts||[])];if(list.some(a=>a.toLowerCase()===v.toLowerCase()))return toast('Yeh shortcut pehle se mojood hai');list.push(v);S.shortcuts=list;try{await W({'settings/shortcuts':list},'Shortcut');toast('Shortcut mehfooz ho gaya')}catch(e){toast('Shortcut mehfooz nahi hua')}}
 function frm(){if(!FM.t||FM.fresh!==arg){const e=arg&&arg.edit?T[arg.edit]:null;FM={t:e?e.type:'udhaar',fresh:arg,id:e?arg.edit:db.ref().push().key,cid:e?e.customerId:(typeof arg==='string'?arg:''),amt:e?e.amountFils/100:'',desc:e?.desc||'',manualDesc:e?.desc||'',qs:[],date:e?.date||today(),notes:e?.notes||'',initialCid:e?e.customerId:(typeof arg==='string'?arg:''),initialType:e?e.type:'udhaar',initialDate:e?.date||today(),payMethod:e?.payMethod||'Cash',payRef:e?.payRef||(e?.type==='paisay'?e?.desc||'':''),edit:!!e,q:FM.q,arch:FM.arch,rc:FM.rc}}
  const f=FM,pv=f.cid?bal(f.cid,f.id):0,a=Math.round(parseFloat(f.amt||0)*100)||0,nb=pv+(f.t==='udhaar'?a:-a);
  const productFields=`<label for="fd">Maal ki Tafseel</label><input id="fd" value="${esc(f.desc)}" placeholder="Misal: Coil Nail" enterkeyhint="next" onkeydown="entryNext(event,'fn')" oninput="FM.desc=this.value;FM.manualDesc=this.value;FM.qs=[]"><div class="quick">${(S.shortcuts||[]).map(x=>`<button type="button" class="${(f.qs||[]).includes(x)?'sel':''}" aria-pressed="${(f.qs||[]).includes(x)}" data-shortcut="${esc(x)}" onclick="pickShortcut(this.dataset.shortcut)">${esc(x)}</button>`).join('')}<button type="button" class="add" onclick="addShortcut()">＋ Naya Shortcut</button></div><div class="mut quick-note">Zyada se zyada 5 shortcuts ek entry mein chun sakte hain.</div>`;
@@ -615,7 +627,7 @@ function customerNext(event){if(event.key!=='Enter')return;event.preventDefault(
 const normItems=s=>(s||'').toLowerCase().split(/[,،+&\n]+/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean).sort().join('|');
 function findDup(f,a){const key=f.t==='udhaar'?normItems(f.desc):(f.payMethod||'').toLowerCase(),ref=(f.payRef||'').trim().toLowerCase();
  const same=t=>t.customerId===f.cid&&t.type===f.t&&t.amountFils===a&&t.date===f.date&&(f.t==='udhaar'?normItems(t.desc)===key:((t.payMethod||'').toLowerCase()===key&&(!ref||!(t.payRef||'').trim()||(t.payRef||'').trim().toLowerCase()===ref)));
- return live().filter(t=>t.id!==f.id&&same(t)).concat(P.filter(i=>i.id!==f.id&&same(i.d)).map(i=>i.d))}
+ return live().filter(t=>t.id!==f.id&&same(t)).concat(P.filter(i=>i.k!=='u'&&i.st==='conflict'&&i.id!==f.id&&same(i.d)).map(i=>i.d))}
 function dupMsg(n,f,a){const w=f.t==='udhaar'?(f.desc.trim()||'maal'):'payment ('+f.payMethod+')';return `Dhyan: ${C[f.cid]?.name||'Customer'} ki ${dmy(f.date)} ko yehi ${f.t==='udhaar'?'entry':'wasooli'} pehle bhi hai (${w} · ${fmt(a)}, ${n} baar). Yeh entry save ho gayi hai.`}
 function showDup(msg){let e=$('#dupwarn');if(!e){e=document.createElement('div');e.id='dupwarn';e.setAttribute('popover','manual');document.body.appendChild(e)}
  e.textContent=msg;e.classList.add('show');clearTimeout(e.h);
@@ -624,24 +636,50 @@ function showDup(msg){let e=$('#dupwarn');if(!e){e=document.createElement('div')
  e.h=setTimeout(()=>{e.classList.remove('show');try{if(e.hidePopover&&e.matches(':popover-open'))e.hidePopover()}catch(x){}},8000)}
 
 async function saveT(){if(busy)return;const de=$('#fdate');if(de&&de.value!==dmy(FM.date)&&!setDate(de.value))return;const f=FM;const a=Math.round(parseFloat(f.amt)*100);if(!f.cid)return toast('Customer chunein');if(!(a>0))return toast('Raqam durust tareeqay se likhein');if(!f.date)return toast('Tareekh chunein');busy=true;const button=$('#save-entry');if(button){button.disabled=true;button.classList.add('busy');button.textContent='Mehfooz ho raha hai…'}
- const dups=findDup(f,a),old=T[f.id],d={customerId:f.cid,type:f.t,amountFils:a,desc:f.t==='udhaar'?f.desc.trim():'',payMethod:f.t==='paisay'?f.payMethod:'',payRef:f.t==='paisay'?f.payRef.trim():'',date:f.date,notes:f.notes,status:'active',updatedAt:Date.now(),updatedBy:U.uid,createdAt:old?.createdAt||Date.now(),createdBy:old?.createdBy||U.uid};
- const it={id:f.id,d,base:old?.updatedAt||0,akey:db.ref().push().key,act:old?'edit':'create',old:old||null,st:'wait'};
- try{if(!online){await q.put(it);P=await q.all();busy=false;if(f.edit){const dest=f.cid,y=ledgerReturn?.cid===dest?ledgerReturn.y:0;ledgerReturn=null;go('one',dest,true);requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'auto'}))}else resetEntry(true);toast('Phone mein save hua — cloud se abhi confirm nahi. Online honay par sync hoga.');if(!f.edit)autoShare(f.id,d);if(dups.length)showDup(dupMsg(dups.length,f,a));return}
-  await commit(it);busy=false;if(f.edit){const dest=f.cid,y=ledgerReturn?.cid===dest?ledgerReturn.y:0;go('one',dest,true);ledgerReturn=null;requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'auto'}));toast(cloud?'Cloud par confirm ho gaya. Hisaab tabdeel hua.':'Is phone par hisaab tabdeel hua (local-only).')}else{resetEntry(true);toast(cloud?'Cloud par confirm ho gaya. Hisaab mehfooz hai.':'Is phone par hisaab mehfooz hua (local-only).');autoShare(f.id,d)}if(dups.length)showDup(dupMsg(dups.length,f,a))}
- catch(e){busy=false;const saveButton=$('#save-entry');if(saveButton){saveButton.disabled=false;saveButton.classList.remove('busy');saveButton.textContent='Hisaab Mehfooz Karein'}toast(e.message==='conflict'?'Yeh hisaab kisi aur device par badal chuka hai. Dobara kholein.':'Save confirm nahi hua. Aap ki entry abhi form mein mehfooz hai; dobara koshish karein.')}}
+ const dups=findDup(f,a),old=T[f.id],now=Date.now(),prev=P.find(x=>x.id===f.id&&x.k!=='u'&&x.st!=='conflict'),d={customerId:f.cid,type:f.t,amountFils:a,desc:f.t==='udhaar'?f.desc.trim():'',payMethod:f.t==='paisay'?f.payMethod:'',payRef:f.t==='paisay'?f.payRef.trim():'',date:f.date,notes:f.notes,status:'active',updatedAt:now,updatedBy:U.uid,createdAt:old?.createdAt||now,createdBy:old?.createdBy||U.uid};
+ /* an entry that is still waiting for sync keeps its first base, so editing it offline is not seen as a conflict */
+ const it={id:f.id,k:'t',d,base:prev?prev.base:(RT[f.id]?.updatedAt||0),akey:db.ref().push().key,act:prev?prev.act:(RT[f.id]?'edit':'create'),old:prev?prev.old:(RT[f.id]||null),st:'wait'};
+ try{await enqueue(it)}catch(e){busy=false;const sb=$('#save-entry');if(sb){sb.disabled=false;sb.classList.remove('busy');sb.textContent='Hisaab Mehfooz Karein'}return toast('Save nahi hua. Aap ki entry abhi form mein hai; dobara koshish karein.')}
+ busy=false;const msg=online?(f.edit?'Hisaab tabdeel ho gaya.':'Hisaab mehfooz ho gaya.'):'Phone mein mehfooz ho gaya. Internet aate hi khud cloud par chala jaye ga.';
+ if(f.edit){const dest=f.cid,y=ledgerReturn?.cid===dest?ledgerReturn.y:0;ledgerReturn=null;go('one',dest,true);requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'auto'}))}else resetEntry(true);
+ toast(msg);if(!f.edit)autoShare(f.id,d);if(dups.length)showDup(dupMsg(dups.length,f,a))}
 async function commit(it){const r=await B.child('transactions/'+it.id).transaction(c=>{if(c&&c.updatedAt===it.d.updatedAt)return c;if((c?.updatedAt||0)!==it.base)return;return it.d});
  if(!r.committed)throw new Error('conflict');
  await B.child('auditLogs/'+it.akey).set({txn:it.id,act:it.act,by:U.uid,at:firebase.database.ServerValue.TIMESTAMP,old:it.old,new:it.d})}
-// ---- offline queue (IndexedDB) ----
-const q={db:null,open(){return this.db||(this.db=new Promise((ok,no)=>{const r=indexedDB.open('khata',1);r.onupgradeneeded=()=>r.result.createObjectStore('q',{keyPath:'id'});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}))},
- async tx(m,f){const d=await this.open();return new Promise((ok,no)=>{const t=d.transaction('q',m),r=f(t.objectStore('q'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error)})},
- put(i){return this.tx('readwrite',s=>s.put(i))},del(i){return this.tx('readwrite',s=>s.delete(i))},all(){return this.tx('readonly',s=>s.getAll())}};
-let P=[],flushing=false;
-async function loadP(){try{P=await q.all()}catch(e){P=[]}refreshDataView();flush()}
-async function flush(){if(!U||!online||flushing)return;flushing=true;let ls=[];try{ls=await q.all()}catch(e){}for(const it of ls){if(it.st==='conflict')continue;try{await commit(it);await q.del(it.id);toast('Hisaab cloud par sync ho gaya')}catch(e){it.st=e.message==='conflict'?'conflict':'fail';await q.put(it).catch(()=>{})}}flushing=false;try{P=await q.all()}catch(e){P=[]}refreshDataView()}
-async function resolve(id,mine){const it=P.find(x=>x.id===id);if(mine){it.base=T[id]?.updatedAt||0;it.st='wait';await q.put(it);flush()}else{await q.del(id);P=await q.all();draw()}}
-async function retry(id){const it=P.find(x=>x.id===id);it.st='wait';await q.put(it);flush()}
-const pendUI=()=>P.length?`<div id="pend" class="card pend noprint"><b>Sync ka Intezar (${P.length})</b>${P.map(i=>`<div class="row"><span>${esc(C[i.d.customerId]?.name||'?')} · ${fmt(i.d.amountFils)} · ${i.st==='conflict'?'<b class="out">Conflict: doosri jagah badla</b>':i.st==='fail'?'<b class="out">Sync nahi hua</b>':'Cloud par confirm nahi'}</span><span>${i.st==='conflict'?`<a href="#" onclick="resolve('${i.id}',1);return false">Meri Wali</a> · <a href="#" onclick="resolve('${i.id}',0);return false">Server Wali</a>`:`<a href="#" onclick="retry('${i.id}');return false">Dobara</a>`}</span></div>`).join('')}</div>`:'';
+// ---- offline outbox: IndexedDB, with a localStorage copy if IndexedDB is blocked ----
+const q={db:null,ls:false,open(){return this.db||(this.db=new Promise((ok,no)=>{try{const r=indexedDB.open('khata',1);r.onupgradeneeded=()=>r.result.createObjectStore('q',{keyPath:'id'});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);r.onblocked=()=>no(new Error('blocked'))}catch(e){no(e)}}).catch(e=>{this.ls=true;throw e}))},
+ lsAll(){try{return JSON.parse(localStorage.getItem('kfOutbox')||'[]')}catch(e){return[]}},lsSave(l){localStorage.setItem('kfOutbox',JSON.stringify(l))},
+ async tx(m,f){const d=await this.open();return new Promise((ok,no)=>{const t=d.transaction('q',m),r=f(t.objectStore('q'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error);t.onabort=()=>no(t.error||new Error('abort'))})},
+ async put(i){try{return await this.tx('readwrite',s=>s.put(i))}catch(e){const l=this.lsAll().filter(x=>x.id!==i.id);l.push(i);this.lsSave(l)}},
+ async del(i){try{await this.tx('readwrite',s=>s.delete(i))}catch(e){}const l=this.lsAll();if(l.some(x=>x.id===i))this.lsSave(l.filter(x=>x.id!==i))},
+ async get(i){let r;try{r=await this.tx('readonly',s=>s.get(i))}catch(e){}return r||this.lsAll().find(x=>x.id===i)},
+ async all(){let a=[];try{a=await this.tx('readonly',s=>s.getAll())}catch(e){}const ids=new Set(a.map(x=>x.id));return a.concat(this.lsAll().filter(x=>!ids.has(x.id))).sort((x,y)=>(x.at||0)-(y.at||0))}};
+let P=[],flushing=false,_slow=false;
+const _rid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+/* show saved-but-not-synced changes everywhere (balances, ledger, reports) as if they were already in the cloud */
+function overlay(){const ops=P.filter(i=>i.k==='u'||i.st!=='conflict');if(!ops.length){C=RC;T=RT;S={...S,...RS};return}
+ const own=new WeakSet(),cp=o=>{const c=Array.isArray(o)?o.slice():{...o};own.add(c);return c},r=cp({customers:cp(RC),transactions:cp(RT),settings:cp(RS)});
+ for(const it of ops){const o=it.k==='u'?it.o:{['transactions/'+it.id]:it.d};for(const p in o){const k=p.split('/').filter(Boolean);if(!['customers','transactions','settings'].includes(k[0]))continue;let x=r;for(let i=0;i<k.length-1;i++){const c=x[k[i]];x=x[k[i]]=c&&typeof c==='object'?(own.has(c)?c:cp(c)):cp({})}const v=o[p],last=k[k.length-1];if(v==null)delete x[last];else x[last]=v}}
+ C=r.customers;T=r.transactions;S={...S,...r.settings}}
+async function enqueue(it){it.at=Date.now();it.v=_rid();it.off=!online;await q.put(it);P=P.filter(x=>x.id!==it.id).concat(it);overlay();setNet();refreshDataView();if(online)setTimeout(flush,0)}
+/* every write goes here: saved on the phone first, then sent to the cloud */
+function W(o,lbl){return enqueue({id:'u'+_rid(),k:'u',o:JSON.parse(JSON.stringify(o)),lbl:lbl||'',st:'wait'})}
+async function loadP(){try{P=await q.all()}catch(e){P=[]}overlay();setNet();refreshDataView();flush()}
+const tmo=(p,ms)=>Promise.race([p,new Promise((_,no)=>setTimeout(()=>no(new Error('timeout')),ms))]);
+async function flush(){if(!U||!B||!online||flushing)return;flushing=true;let n=0,off=0;
+ try{let ls=[];try{ls=await q.all()}catch(e){ls=P.slice()}
+  for(const it of ls){if(!online)break;if(it.st==='conflict')continue;
+   try{if(it.k==='u')await tmo(B.update(it.o),20000);else await tmo(commit(it),20000);
+    const cur=await q.get(it.id);if(!cur||cur.v===it.v)await q.del(it.id);n++;if(it.off||it.st!=='wait')off++;_slow=false}
+   catch(e){if(e.message==='timeout'){_slow=true;break}it.st=e.message==='conflict'?'conflict':'fail';it.err=String(e&&(e.code||e.message)||'');const cur=await q.get(it.id);if(!cur||cur.v===it.v)await q.put(it).catch(()=>{})}}}
+ finally{flushing=false;try{P=await q.all()}catch(e){}overlay();setNet();refreshDataView()}
+ if(off)toast(off===1?'1 offline entry cloud par sync ho gayi ✓':off+' offline entries cloud par sync ho gayin ✓');
+ if(P.some(i=>i.st==='wait')&&online&&!_slow&&n)setTimeout(flush,1500)}
+async function resolve(id,mine){const it=P.find(x=>x.id===id);if(!it)return;if(mine){it.base=RT[id]?.updatedAt||0;it.st='wait';await q.put(it);flush()}else{await q.del(id);P=await q.all();overlay();draw()}}
+async function retry(id){const it=P.find(x=>x.id===id);if(!it)return;it.st='wait';await q.put(it);if(!online)toast('Internet nahi hai. Internet aate hi khud sync ho jaye ga.');flush()}
+const pendLbl=i=>i.k==='u'?esc(i.lbl||'Tabdeeli'):esc(C[i.d.customerId]?.name||'?')+' · '+fmt(i.d.amountFils);
+const pendUI=()=>{const bad=P.filter(i=>i.st==='conflict'||i.st==='fail');if(!P.length||(online&&!_slow&&!bad.length)||(page==='form'&&!bad.length))return '';const w=P.filter(i=>i.st==='wait');
+ return `<div id="pend" class="card pend noprint"><b>${online?'Cloud par ja raha hai':'Offline — phone mein mehfooz'} (${P.length})</b><div class="mut" style="text-align:left;margin:4px 0 6px">${online?'Thori der mein khud sync ho jaye ga.':'Internet aate hi yeh sab khud cloud par chala jaye ga. App band bhi kar dein to kuch zaya nahi hoga.'}</div>${bad.map(i=>`<div class="row"><span>${pendLbl(i)} · ${i.st==='conflict'?'<b class="out">Conflict: doosri jagah badla</b>':'<b class="out">Sync nahi hua</b>'}</span><span>${i.st==='conflict'?`<a href="#" onclick="resolve('${i.id}',1);return false">Meri Wali</a> · <a href="#" onclick="resolve('${i.id}',0);return false">Server Wali</a>`:`<a href="#" onclick="retry('${i.id}');return false">Dobara</a>`}</span></div>`).join('')}${w.slice(-4).reverse().map(i=>`<div class="row"><span>${pendLbl(i)}</span><span class="mut">Intezar</span></div>`).join('')}${w.length>4?`<div class="mut" style="text-align:left">+${w.length-4} aur</div>`:''}</div>`};
 // ---- WhatsApp (premium bilingual action) ----
 let SM={id:'',t:null,lang:'roman'};
 function msg(id,t,lang='roman'){return dmy(t.date)+'\n'+msg0(id,t,lang)}
@@ -689,14 +727,14 @@ function lockCard(){const on=KL.on(),fp=KL.fp(),ok=KL.fpAvail(),sw=(a,f,d)=>`<bu
 return `<div class="card lockc"><div class="lk-h2"><i class="lk-ic"><svg><use href="#fp"/></svg></i><div><h3>App Lock</h3><div class="mut">PIN${ok?' aur fingerprint':''} se app mehfooz rakhein</div></div>${sw(on,'KL.toggle()')}</div>${on?`<div class="lk-or"><div><b>Fingerprint se kholein</b><div class="mut">${ok?'Ek touch mein app khul jaye':'Is device par fingerprint nahi hai'}</div></div>${sw(fp,'KL.fpToggle()',!ok)}</div><label for="lk-delay">App se bahar jane ke baad lock</label><select id="lk-delay" onchange="KL.setDelay(this.value)"><option value="0" ${KL.getDelay()===0?'selected':''}>Foran (app se nikalte hi)</option><option value="15" ${KL.getDelay()===15?'selected':''}>15 seconds</option><option value="60" ${KL.getDelay()===60?'selected':''}>1 minute</option><option value="120" ${KL.getDelay()===120?'selected':''}>2 minutes</option><option value="300" ${KL.getDelay()===300?'selected':''}>5 minutes</option></select><div class="mut" style="margin:7px 4px 0">Lock tab lagega jab aap app par wapas aayenge.</div><div class="btns"><button onclick="KL.change()">PIN Tabdeel Karein</button><button class="p" onclick="KL.lockNow()">Abhi Lock Karein</button></div>`:'<p class="mut" style="text-align:left;padding:12px 4px 0">Lock on karein aur 4 se 10 number ka apna PIN chunein. Har device ka PIN alag ho sakta hai.</p>'}</div>`}
 function set(){return `${BK}<h2>App ki Settings</h2><div class="setcol"><div class="card"><label>Logo</label><input type="file" accept="image/*" onchange="logo(this)"><label>Business ka Naam</label><input id="sn" value="${esc(S.name)}"><label>Business Phone</label><input id="sp" value="${esc(S.phone)}"><label>Default Country Code</label><input id="sc" value="${esc(S.cc)}">
  <p class="mut" style="margin-top:14px">WhatsApp message sirf us waqt tayyar hoga jab aap entry form mein us option ko chunein.</p><button class="p" onclick="saveS()">Mehfooz Karein</button></div>${lockCard()}${prefCard()}</div><div class="btns"><button onclick="inst()">App Install Karein</button><button onclick="backup()">Backup Download Karein</button><button onclick="$('#rf2').click()">Backup Wapas Lagayein</button><input id="rf2" type="file" accept=".json" hidden onchange="restore(this)"></div>`}
-async function saveS(){try{await B.child('settings').set({name:$('#sn').value,phone:$('#sp').value,cc:$('#sc').value.replace(/\D/g,'')||'971',tpl:S.tpl||'t1',msg:S.msg||'',logo:S.logo||'',shortcuts:S.shortcuts||[],amts:S.amts||[]});toast('Settings mehfooz ho gayin')}catch(e){toast('Mehfooz nahi hua.')}}
+async function saveS(){try{await W({settings:{name:$('#sn').value,phone:$('#sp').value,cc:$('#sc').value.replace(/\D/g,'')||'971',tpl:S.tpl||'t1',msg:S.msg||'',logo:S.logo||'',shortcuts:S.shortcuts||[],amts:S.amts||[]}},'Settings');toast('Settings mehfooz ho gayin')}catch(e){toast('Mehfooz nahi hua.')}}
 function backup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({customers:C,transactions:T,settings:S},null,1)],{type:'application/json'}));a.download='khata-backup-'+today()+'.json';a.click()}
-function restore(i){const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||typeof d.customers!=='object'||typeof d.transactions!=='object')throw 0;ask('Maujooda data hat kar is backup se badal dein?','Haan, Wapas Lagayein',async()=>{if(cloud){try{await B.update({customers:d.customers||{},transactions:d.transactions||{},settings:d.settings||{}});toast('Backup wapas lag gaya')}catch(e){toast('Backup nahi laga. Dobara koshish karein.')}}else{localStorage.setItem('khataLocal',JSON.stringify({businesses:{demo:{customers:d.customers||{},transactions:d.transactions||{},settings:d.settings||{}}}}));location.reload()}})}catch(e){toast('Yeh backup file durust nahi hai')}};r.readAsText(f)}
+function restore(i){const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||typeof d.customers!=='object'||typeof d.transactions!=='object')throw 0;ask('Maujooda data hat kar is backup se badal dein?','Haan, Wapas Lagayein',async()=>{if(cloud){try{await W({customers:d.customers||{},transactions:d.transactions||{},settings:d.settings||{}},'Backup');toast('Backup wapas lag gaya')}catch(e){toast('Backup nahi laga. Dobara koshish karein.')}}else{localStorage.setItem('khataLocal',JSON.stringify({businesses:{demo:{customers:d.customers||{},transactions:d.transactions||{},settings:d.settings||{}}}}));location.reload()}})}catch(e){toast('Yeh backup file durust nahi hai')}};r.readAsText(f)}
 let ip;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e});
 const inst=()=>ip?ip.prompt():toast('Browser menu mein "Add to Home screen" chunein');
 function logo(i){const f=i.files[0];if(!f)return;const im=new Image();im.onload=()=>{const k=Math.min(1,240/im.width),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.logo=c.toDataURL('image/png');toast('Logo chun liya. Mehfooz Karein dabayein.')};im.onerror=()=>toast('Yeh tasveer nahi khuli');im.src=URL.createObjectURL(f)}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
-if(typeof firebase!=='undefined'&&firebase.initializeApp&&!firebaseConfig.apiKey.includes('PASTE'))firebaseMode();
+if(!firebaseConfig.apiKey.includes('PASTE')){if(typeof firebase!=='undefined'&&firebase.initializeApp&&firebase.database)firebaseMode();else offlineBoot()}
 else{localMode();setNet();toast('Firebase Web API key abhi placeholder hai; data filhaal sirf is phone mein rahega.')}
 </script><script>
 const pf=k=>{try{return localStorage.getItem(k)!=='0'}catch(e){return true}};
@@ -783,8 +821,8 @@ ${top.length?`<div class="sh"><h3>Sab se zyada baqaya</h3><a href="#" onclick="F
 function customerResultsMarkup(l){const ago=d=>{const n=Math.round((new Date(today())-new Date(d))/864e5);return n<=0?'paisay aaj':'paisay '+n+' din pehle'};return l.map(c=>`<div class="row cr" onclick="go('one','${c.id}')"><i class="av">${ini(c)}</i><div class="cn"><b>${esc(c.name)}</b><div class="mut">${esc(c.phone||c.biz||'Number nahi')}${c.b>0&&c.lastPayment?' · '+ago(c.lastPayment):''}</div></div><b class="amt${c.b<0?' adv':''}"><small>AED</small>${fmt(Math.abs(c.b)).slice(4)}</b></div>`).join('')||'<p class="mut">Koi customer nahi mila.</p>'}
 function cust(){const l=customerRows(),so=FM.sort||'n';return `<div class="top"><h2>Customers<br><span id="customer-count">${l.length} ${FM.arch?'archive khate':'khate'}</span></h2><div class="acts"><button class="rb dk" aria-label="Naya Customer" onclick="custForm()">${ic('p',22)}</button></div></div><input id="qs" type="search" placeholder="Naam, number ya business" value="${esc(FM.q||'')}" oninput="FM.q=this.value;updateCustomerResults()"><div class="pills">${[['n','Naam'],['b','Zyada baqaya'],['o','Purana baqaya']].map(([k,t])=>`<button class="${so===k?'on':''}" onclick="FM.sort='${k}';draw()">${t}</button>`).join('')}<button onclick="FM.arch=!FM.arch;draw()">${FM.arch?'Active':'Archive'}</button></div><div id="customer-results" class="card cl" style="padding:4px 18px">${customerResultsMarkup(l)}</div>`}
 function setAmt(n){FM.amt=String(n);const i=$('#fa');if(i)i.value=FM.amt;calc()}
-async function addAmt(){const v=parseFloat(prompt('Raqam likhein (misal 50)'));if(!(v>0))return;const l=[...(S.amts||[])];if(l.includes(v))return toast('Yeh raqam pehle se mojood hai');l.push(v);l.sort((a,b)=>a-b);S.amts=l;try{await B.child('settings').update({amts:l})}catch(e){toast('Mehfooz nahi hua.')}draw()}
-async function delAmt(i){const old=[...(S.amts||[])],l=[...old],v=l.splice(i,1)[0];S.amts=l;B.child('settings').update({amts:l}).catch(()=>{});draw();toast('Raqam '+v+' hata di',{label:'Undo',run:()=>{S.amts=old;B.child('settings').update({amts:old}).catch(()=>{});draw()}},5000)}
+async function addAmt(){const v=parseFloat(prompt('Raqam likhein (misal 50)'));if(!(v>0))return;const l=[...(S.amts||[])];if(l.includes(v))return toast('Yeh raqam pehle se mojood hai');l.push(v);l.sort((a,b)=>a-b);S.amts=l;try{await W({'settings/amts':l},'Raqam shortcut')}catch(e){toast('Mehfooz nahi hua.')}draw()}
+async function delAmt(i){const old=[...(S.amts||[])],l=[...old],v=l.splice(i,1)[0];S.amts=l;W({'settings/amts':l},'Raqam shortcut').catch(()=>{});draw();toast('Raqam '+v+' hata di',{label:'Undo',run:()=>{S.amts=old;W({'settings/amts':old},'Raqam shortcut').catch(()=>{});draw()}},5000)}
 function frm(){if(!FM.t||FM.fresh!==arg){const e=arg&&arg.edit?T[arg.edit]:null;FM={t:e?e.type:'udhaar',fresh:arg,id:e?arg.edit:db.ref().push().key,cid:e?e.customerId:(typeof arg==='string'?arg:''),amt:e?e.amountFils/100:'',desc:e?.desc||'',manualDesc:e?.desc||'',qs:[],date:e?.date||today(),notes:e?.notes||'',initialCid:e?e.customerId:(typeof arg==='string'?arg:''),initialType:e?e.type:'udhaar',initialDate:e?.date||today(),payMethod:e?.payMethod||'Cash',payRef:e?.payRef||(e?.type==='paisay'?e?.desc||'':''),edit:!!e,q:FM.q,arch:FM.arch,rc:FM.rc}}
 const f=FM,pv=f.cid?bal(f.cid,f.id):0,a=Math.round(parseFloat(f.amt||0)*100)||0,nb=pv+(f.t==='udhaar'?a:-a),c=C[f.cid],u=f.t==='udhaar',am=S.amts||[];
 const who=c?`<div class="cc"><i class="av">${ini(c)}</i><div><b>${esc(c.name)}</b><div class="mut">Baqaya ${fmt(pv)}</div></div><button type="button" onclick="FM.cid='';draw()">Badlein</button></div>`
